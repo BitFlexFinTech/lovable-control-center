@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/select';
 import { IntegrationCard } from '@/components/integrations/IntegrationCard';
 import { IntegrationSection } from '@/components/integrations/IntegrationSection';
+import { IntegrationSetupDialog } from '@/components/sites/IntegrationSetupDialog';
 import { useIntegrations } from '@/contexts/IntegrationsContext';
 import { CONTROL_CENTER_INTEGRATIONS, CONTROL_CENTER_APP } from '@/types/credentials';
 
@@ -22,6 +23,20 @@ const Integrations = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [ccSectionOpen, setCcSectionOpen] = useState(true);
   const [sitesSectionOpen, setSitesSectionOpen] = useState(true);
+  const [setupDialogOpen, setSetupDialogOpen] = useState(false);
+  const [selectedIntegrationId, setSelectedIntegrationId] = useState<string | null>(null);
+
+  const handleConfigureIntegration = (integrationId: string) => {
+    setSelectedIntegrationId(integrationId);
+    setSetupDialogOpen(true);
+  };
+
+  const handleSetupComplete = (credentials: Record<string, string>) => {
+    console.log('Integration setup complete:', selectedIntegrationId, credentials);
+    // In a real app, this would update the integration status to 'active'
+    setSetupDialogOpen(false);
+    setSelectedIntegrationId(null);
+  };
 
   // All available categories including new ones for Control Center
   const allCategories = [
@@ -162,6 +177,7 @@ const Integrations = () => {
               integration={integration}
               onRemoveApp={(siteId) => removeIntegrationFromApp(integration.id, siteId)}
               onConnect={() => handleConnectCC(integration.id)}
+              onConfigure={() => handleConfigureIntegration(integration.id)}
               animationDelay={index * 50}
               showCriticality
             />
@@ -199,6 +215,7 @@ const Integrations = () => {
                     key={integration.id}
                     integration={integration}
                     onRemoveApp={(siteId) => removeIntegrationFromApp(integration.id, siteId)}
+                    onConfigure={() => handleConfigureIntegration(integration.id)}
                     animationDelay={(catIndex * 3 + index) * 50}
                   />
                 ))}
@@ -207,6 +224,19 @@ const Integrations = () => {
           ))
         )}
       </IntegrationSection>
+
+      {/* Integration Setup Dialog */}
+      {selectedIntegrationId && (
+        <IntegrationSetupDialog
+          isOpen={setupDialogOpen}
+          onClose={() => {
+            setSetupDialogOpen(false);
+            setSelectedIntegrationId(null);
+          }}
+          integrationId={selectedIntegrationId}
+          onComplete={handleSetupComplete}
+        />
+      )}
     </DashboardLayout>
   );
 };
