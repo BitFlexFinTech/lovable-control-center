@@ -163,6 +163,7 @@ const Integrations = () => {
               onRemoveApp={(siteId) => removeIntegrationFromApp(integration.id, siteId)}
               onConnect={() => handleConnectCC(integration.id)}
               animationDelay={index * 50}
+              showCriticality
             />
           ))}
         </div>
