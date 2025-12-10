@@ -20,9 +20,14 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useTenant } from '@/contexts/TenantContext';
-import { sites, tenants } from '@/data/seed-data';
+import { sites as initialSites, tenants } from '@/data/seed-data';
+import { CreateSiteDialog } from '@/components/mail/CreateSiteDialog';
+import { useToast } from '@/hooks/use-toast';
 
 const Sites = () => {
+  const { toast } = useToast();
+  const [isCreateSiteOpen, setIsCreateSiteOpen] = useState(false);
+  const [sites, setSites] = useState(initialSites);
   const { currentTenant } = useTenant();
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -66,7 +71,7 @@ const Sites = () => {
               <RefreshCw className="h-3.5 w-3.5" />
               Health Check
             </Button>
-            <Button size="sm" className="gap-1.5">
+            <Button size="sm" className="gap-1.5" onClick={() => setIsCreateSiteOpen(true)}>
               <Plus className="h-3.5 w-3.5" />
               Add Site
             </Button>
@@ -183,6 +188,18 @@ const Sites = () => {
           </TableBody>
         </Table>
       </div>
+
+      <CreateSiteDialog
+        isOpen={isCreateSiteOpen}
+        onClose={() => setIsCreateSiteOpen(false)}
+        onCreate={(siteData, emailAccounts) => {
+          toast({
+            title: 'Site created with email accounts',
+            description: `Created: ${emailAccounts.map(a => a.email).join(', ')}`,
+          });
+        }}
+        tenantId={currentTenant?.id || 'tenant-1'}
+      />
     </DashboardLayout>
   );
 };

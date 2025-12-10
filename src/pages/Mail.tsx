@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback, DragEvent } from 'react';
 import { Search, Settings, User } from 'lucide-react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Input } from '@/components/ui/input';
@@ -9,6 +9,7 @@ import { MailList } from '@/components/mail/MailList';
 import { MailDetail } from '@/components/mail/MailDetail';
 import { ComposeDialog } from '@/components/mail/ComposeDialog';
 import { CreateAccountDialog } from '@/components/mail/CreateAccountDialog';
+import { EmailSyncDialog } from '@/components/mail/EmailSyncDialog';
 import { Mail, MailFolder, EmailAccount } from '@/types/mail';
 import { mails as initialMails, emailAccounts as initialAccounts } from '@/data/mail-data';
 import { useTenant } from '@/contexts/TenantContext';
@@ -26,8 +27,13 @@ export default function MailPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isComposeOpen, setIsComposeOpen] = useState(false);
   const [isCreateAccountOpen, setIsCreateAccountOpen] = useState(false);
+  const [isEmailSyncOpen, setIsEmailSyncOpen] = useState(false);
   const [composeMode, setComposeMode] = useState<'compose' | 'reply' | 'forward'>('compose');
   const [composeInitial, setComposeInitial] = useState({ to: '', subject: '', body: '' });
+
+  // Drag and drop state
+  const [draggedMail, setDraggedMail] = useState<Mail | null>(null);
+  const [dragOverTarget, setDragOverTarget] = useState<string | null>(null);
 
   const domain = currentTenant?.slug ? `${currentTenant.slug}.com` : 'acme-commerce.com';
 
@@ -63,6 +69,57 @@ export default function MailPage() {
     });
     return counts;
   }, [mails]);
+
+  // Drag and drop handlers
+  const handleDragStart = useCallback((mail: Mail) => (e: DragEvent) => {
+    setDraggedMail(mail);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', mail.id);
+  }, []);
+
+  const handleDragEnd = useCallback(() => {
+    setDraggedMail(null);
+    setDragOverTarget(null);
+  }, []);
+
+  const handleDragOver = useCallback((folderId: string) => (e: DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverTarget(folderId);
+  }, []);
+
+  const handleDragLeave = useCallback(() => {
+    setDragOverTarget(null);
+  }, []);
+
+  const handleDrop = useCallback((targetFolder: string) => (e: DragEvent) => {
+    e.preventDefault();
+    setDragOverTarget(null);
+    
+    if (draggedMail && targetFolder !== draggedMail.folder) {
+      setMails((prev) =>
+        prev.map((m) =>
+          m.id === draggedMail.id ? { ...m, folder: targetFolder as MailFolder } : m
+        )
+      );
+      
+      const folderNames: Record<string, string> = {
+        inbox: 'Inbox',
+        sent: 'Sent',
+        drafts: 'Drafts',
+        archive: 'Archive',
+        trash: 'Trash',
+        spam: 'Spam',
+      };
+      
+      toast({
+        title: `Email moved to ${folderNames[targetFolder]}`,
+        description: draggedMail.subject,
+      });
+    }
+    
+    setDraggedMail(null);
+  }, [draggedMail, toast]);
 
   const handleSelectMail = (mail: Mail) => {
     setSelectedMail(mail);
@@ -170,6 +227,14 @@ export default function MailPage() {
     toast({ title: `Email account ${newAccount.email} created` });
   };
 
+  const handleEmailSync = (provider: string, config: any) => {
+    toast({
+      title: `${provider.toUpperCase()} connected`,
+      description: 'Your emails will be synced shortly.',
+    });
+    setIsEmailSyncOpen(false);
+  };
+
   return (
     <DashboardLayout>
       <div className="h-[calc(100vh-4rem)] flex flex-col">
@@ -209,6 +274,11 @@ export default function MailPage() {
             onAccountChange={setSelectedAccount}
             onCompose={handleCompose}
             onCreateAccount={() => setIsCreateAccountOpen(true)}
+            onEmailSync={() => setIsEmailSyncOpen(true)}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            dragOverTarget={dragOverTarget}
           />
           
           <div className="w-80 border-r border-border flex flex-col">
@@ -223,6 +293,9 @@ export default function MailPage() {
               selectedMail={selectedMail}
               onSelectMail={handleSelectMail}
               onToggleStar={handleToggleStar}
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
+              draggedMail={draggedMail}
             />
           </div>
 
@@ -254,6 +327,12 @@ export default function MailPage() {
         onClose={() => setIsCreateAccountOpen(false)}
         onCreateAccount={handleCreateAccount}
         domain={domain}
+      />
+
+      <EmailSyncDialog
+        isOpen={isEmailSyncOpen}
+        onClose={() => setIsEmailSyncOpen(false)}
+        onConnect={handleEmailSync}
       />
     </DashboardLayout>
   );
