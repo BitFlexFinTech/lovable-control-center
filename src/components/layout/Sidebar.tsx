@@ -10,7 +10,8 @@ import {
   HelpCircle,
   Zap,
   Mail,
-  Share2
+  Share2,
+  KeyRound
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { cn } from '@/lib/utils';
@@ -19,6 +20,7 @@ const mainNavItems = [
   { icon: LayoutDashboard, label: 'Overview', path: '/' },
   { icon: Mail, label: 'Mail', path: '/mail' },
   { icon: Share2, label: 'Social Prefill', path: '/social-prefill' },
+  { icon: KeyRound, label: 'Password Manager', path: '/passwords' },
   { icon: Building2, label: 'Tenants', path: '/tenants' },
   { icon: Globe, label: 'Sites', path: '/sites' },
   { icon: Users, label: 'Users', path: '/users' },

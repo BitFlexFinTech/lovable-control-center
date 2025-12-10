@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plug, Filter, Search } from 'lucide-react';
+import { Plug, Search } from 'lucide-react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,14 +11,17 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { IntegrationCard } from '@/components/integrations/IntegrationCard';
+import { IntegrationSection } from '@/components/integrations/IntegrationSection';
 import { useIntegrations } from '@/contexts/IntegrationsContext';
-import { cn } from '@/lib/utils';
+import { CONTROL_CENTER_INTEGRATIONS, CONTROL_CENTER_APP } from '@/types/credentials';
 
 const Integrations = () => {
-  const { integrations, removeIntegrationFromApp } = useIntegrations();
+  const { integrations, removeIntegrationFromApp, addIntegrationForApp } = useIntegrations();
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [ccSectionOpen, setCcSectionOpen] = useState(true);
+  const [sitesSectionOpen, setSitesSectionOpen] = useState(true);
 
   // Get unique categories
   const categories = [...new Set(integrations.map(i => i.category))];
@@ -34,18 +37,43 @@ const Integrations = () => {
     return matchesSearch && matchesCategory && matchesStatus;
   });
 
-  // Group by category
-  const groupedIntegrations = categories.reduce((acc, category) => {
-    const items = filteredIntegrations.filter(i => i.category === category);
+  // Separate Control Center integrations from Created Sites integrations
+  const controlCenterIntegrations = filteredIntegrations.filter(i => 
+    CONTROL_CENTER_INTEGRATIONS.includes(i.id)
+  );
+  
+  const createdSiteIntegrations = filteredIntegrations.filter(i => 
+    !CONTROL_CENTER_INTEGRATIONS.includes(i.id) || 
+    i.linkedApps.some(app => app.siteId !== 'control-center')
+  );
+
+  // Group created site integrations by category
+  const groupedSiteIntegrations = categories.reduce((acc, category) => {
+    const items = createdSiteIntegrations.filter(i => i.category === category);
     if (items.length > 0) {
       acc[category] = items;
     }
     return acc;
-  }, {} as Record<string, typeof filteredIntegrations>);
+  }, {} as Record<string, typeof createdSiteIntegrations>);
 
   // Stats
-  const activeCount = integrations.filter(i => i.linkedApps.length > 0).length;
+  const ccActiveCount = controlCenterIntegrations.filter(i => 
+    i.linkedApps.some(a => a.siteId === 'control-center')
+  ).length;
+  const siteActiveCount = createdSiteIntegrations.filter(i => 
+    i.linkedApps.some(a => a.siteId !== 'control-center')
+  ).length;
   const totalApps = new Set(integrations.flatMap(i => i.linkedApps.map(a => a.siteId))).size;
+
+  const handleConnectCC = (integrationId: string) => {
+    addIntegrationForApp(integrationId, {
+      siteId: 'control-center',
+      siteName: CONTROL_CENTER_APP.siteName,
+      domain: CONTROL_CENTER_APP.domain,
+      color: CONTROL_CENTER_APP.color,
+      linkedAt: new Date().toISOString(),
+    });
+  };
 
   return (
     <DashboardLayout>
@@ -60,10 +88,13 @@ const Integrations = () => {
           </div>
           <div className="flex items-center gap-4 text-sm">
             <div className="px-3 py-1.5 rounded-lg bg-primary/10 text-primary">
-              <span className="font-semibold">{activeCount}</span> active
+              <span className="font-semibold">{ccActiveCount}</span> Control Center
+            </div>
+            <div className="px-3 py-1.5 rounded-lg bg-status-active/10 text-status-active">
+              <span className="font-semibold">{siteActiveCount}</span> Sites
             </div>
             <div className="px-3 py-1.5 rounded-lg bg-muted">
-              <span className="font-semibold">{totalApps}</span> apps connected
+              <span className="font-semibold">{totalApps}</span> apps
             </div>
           </div>
         </div>
@@ -105,37 +136,67 @@ const Integrations = () => {
         </Select>
       </div>
 
-      {/* Integration Categories */}
-      {Object.entries(groupedIntegrations).length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground">
-          <Plug className="h-12 w-12 mx-auto mb-3 opacity-20" />
-          <p>No integrations match your filters</p>
+      {/* Control Center Section */}
+      <IntegrationSection
+        title="Control Center Integrations"
+        description="Core integrations required to run the Control Center platform"
+        variant="control-center"
+        activeCount={ccActiveCount}
+        totalCount={controlCenterIntegrations.length}
+        isOpen={ccSectionOpen}
+        onOpenChange={setCcSectionOpen}
+      >
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {controlCenterIntegrations.map((integration, index) => (
+            <IntegrationCard
+              key={integration.id}
+              integration={integration}
+              onRemoveApp={(siteId) => removeIntegrationFromApp(integration.id, siteId)}
+              onConnect={() => handleConnectCC(integration.id)}
+              animationDelay={index * 50}
+            />
+          ))}
         </div>
-      ) : (
-        Object.entries(groupedIntegrations).map(([category, items], catIndex) => (
-          <div key={category} className="mb-8">
-            <h2 
-              className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4 opacity-0 animate-fade-in" 
-              style={{ animationDelay: `${catIndex * 50 + 100}ms` }}
-            >
-              {category}
-              <span className="ml-2 text-xs text-muted-foreground/60">
-                ({items.filter(i => i.linkedApps.length > 0).length}/{items.length} active)
-              </span>
-            </h2>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {items.map((integration, index) => (
-                <IntegrationCard
-                  key={integration.id}
-                  integration={integration}
-                  onRemoveApp={(siteId) => removeIntegrationFromApp(integration.id, siteId)}
-                  animationDelay={(catIndex * 3 + index) * 50 + 150}
-                />
-              ))}
-            </div>
+      </IntegrationSection>
+
+      {/* Created Sites Section */}
+      <IntegrationSection
+        title="Created Sites Integrations"
+        description="Integrations for your Lovable-built websites"
+        variant="created-sites"
+        activeCount={siteActiveCount}
+        totalCount={createdSiteIntegrations.length}
+        isOpen={sitesSectionOpen}
+        onOpenChange={setSitesSectionOpen}
+      >
+        {Object.entries(groupedSiteIntegrations).length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground">
+            <Plug className="h-12 w-12 mx-auto mb-3 opacity-20" />
+            <p>No integrations match your filters</p>
           </div>
-        ))
-      )}
+        ) : (
+          Object.entries(groupedSiteIntegrations).map(([category, items], catIndex) => (
+            <div key={category} className="mb-6 last:mb-0">
+              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">
+                {category}
+                <span className="ml-2 text-xs text-muted-foreground/60">
+                  ({items.filter(i => i.linkedApps.length > 0).length}/{items.length} active)
+                </span>
+              </h3>
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {items.map((integration, index) => (
+                  <IntegrationCard
+                    key={integration.id}
+                    integration={integration}
+                    onRemoveApp={(siteId) => removeIntegrationFromApp(integration.id, siteId)}
+                    animationDelay={(catIndex * 3 + index) * 50}
+                  />
+                ))}
+              </div>
+            </div>
+          ))
+        )}
+      </IntegrationSection>
     </DashboardLayout>
   );
 };

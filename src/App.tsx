@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { TenantProvider } from "@/contexts/TenantContext";
 import { CartProvider } from "@/contexts/CartContext";
 import { IntegrationsProvider } from "@/contexts/IntegrationsContext";
+import { PasswordManagerProvider } from "@/contexts/PasswordManagerContext";
 import Index from "./pages/Index";
 import Tenants from "./pages/Tenants";
 import Sites from "./pages/Sites";
@@ -16,6 +17,7 @@ import AuditLogs from "./pages/AuditLogs";
 import Settings from "./pages/Settings";
 import Mail from "./pages/Mail";
 import SocialPrefill from "./pages/SocialPrefill";
+import PasswordManager from "./pages/PasswordManager";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,23 +28,26 @@ const App = () => (
       <TenantProvider>
         <CartProvider>
           <IntegrationsProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/mail" element={<Mail />} />
-                <Route path="/social-prefill" element={<SocialPrefill />} />
-                <Route path="/tenants" element={<Tenants />} />
-                <Route path="/sites" element={<Sites />} />
-                <Route path="/users" element={<Users />} />
-                <Route path="/roles" element={<Roles />} />
-                <Route path="/integrations" element={<Integrations />} />
-                <Route path="/audit-logs" element={<AuditLogs />} />
-                <Route path="/settings" element={<Settings />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </BrowserRouter>
+            <PasswordManagerProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/mail" element={<Mail />} />
+                  <Route path="/social-prefill" element={<SocialPrefill />} />
+                  <Route path="/passwords" element={<PasswordManager />} />
+                  <Route path="/tenants" element={<Tenants />} />
+                  <Route path="/sites" element={<Sites />} />
+                  <Route path="/users" element={<Users />} />
+                  <Route path="/roles" element={<Roles />} />
+                  <Route path="/integrations" element={<Integrations />} />
+                  <Route path="/audit-logs" element={<AuditLogs />} />
+                  <Route path="/settings" element={<Settings />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </BrowserRouter>
+            </PasswordManagerProvider>
           </IntegrationsProvider>
         </CartProvider>
       </TenantProvider>
