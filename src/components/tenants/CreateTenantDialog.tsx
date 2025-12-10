@@ -33,7 +33,7 @@ export function CreateTenantDialog({ isOpen, onClose, onCreateTenant }: CreateTe
   const [formData, setFormData] = useState({
     name: '',
     slug: '',
-    environment: 'development' as Tenant['environment'],
+    environment: 'sandbox' as Tenant['environment'],
     customDomainEnabled: false,
     backupEnabled: true,
   });
@@ -86,7 +86,7 @@ export function CreateTenantDialog({ isOpen, onClose, onCreateTenant }: CreateTe
     setFormData({
       name: '',
       slug: '',
-      environment: 'development',
+      environment: 'sandbox',
       customDomainEnabled: false,
       backupEnabled: true,
     });
@@ -142,7 +142,7 @@ export function CreateTenantDialog({ isOpen, onClose, onCreateTenant }: CreateTe
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="development">Development</SelectItem>
+                <SelectItem value="sandbox">Sandbox</SelectItem>
                 <SelectItem value="staging">Staging</SelectItem>
                 <SelectItem value="production">Production</SelectItem>
               </SelectContent>
