@@ -1,8 +1,8 @@
-import { Bell, Search, Command } from 'lucide-react';
+import { Search, Command } from 'lucide-react';
 import { TenantSwitcher } from '@/components/TenantSwitcher';
-import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { CartDrawer } from '@/components/cart/CartDrawer';
+import { NotificationCenter } from '@/components/monitoring/NotificationCenter';
 import { users } from '@/data/seed-data';
 
 export function TopBar() {
@@ -33,10 +33,7 @@ export function TopBar() {
         <div className="flex items-center gap-3">
           <CartDrawer />
           
-          <Button variant="ghost" size="icon-sm" className="relative">
-            <Bell className="h-4 w-4" />
-            <span className="absolute top-1 right-1 h-2 w-2 bg-primary rounded-full" />
-          </Button>
+          <NotificationCenter />
           
           <div className="h-6 w-px bg-border" />
           

@@ -77,7 +77,7 @@ export function CreateTenantDialog({ isOpen, onClose, onCreateTenant }: CreateTe
       updatedAt: new Date().toISOString(),
       baseUrl: `https://${formData.slug}.example.com`,
       adminUrl: `https://admin.${formData.slug}.example.com`,
-      apiKeys: { primary: `pk_${Date.now()}`, secondary: `sk_${Date.now()}` },
+      apiKeys: { public: `pk_${Date.now()}`, private: `sk_${Date.now()}` },
       permissions: ['read', 'write', 'admin'],
     };
 
