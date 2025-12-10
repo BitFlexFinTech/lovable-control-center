@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MoreHorizontal, ExternalLink, Settings, RefreshCw, Search, Filter, Globe, Rocket, ArrowRight, CreditCard, BarChart3, Crown, User } from 'lucide-react';
+import { MoreHorizontal, ExternalLink, Settings, RefreshCw, Search, Filter, Globe, Rocket, ArrowRight, CreditCard, BarChart3, Crown, User, Layers, Search as SearchIcon, ChevronDown } from 'lucide-react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { StatusPill } from '@/components/dashboard/StatusPill';
@@ -39,6 +39,8 @@ import { CustomerBillingPanel } from '@/components/sites/CustomerBillingPanel';
 import { SiteTransferDialog } from '@/components/sites/SiteTransferDialog';
 import { SubscriptionUpgradeDialog } from '@/components/sites/SubscriptionUpgradeDialog';
 import { AnalyticsComparisonView } from '@/components/sites/AnalyticsComparisonView';
+import { MultiSiteBuilderDialog } from '@/components/sites/MultiSiteBuilderDialog';
+import { SEOManagerDialog } from '@/components/sites/SEOManagerDialog';
 import { usePasswordManager } from '@/contexts/PasswordManagerContext';
 import { useToast } from '@/hooks/use-toast';
 import { SiteOwnerType, SubscriptionTier } from '@/types/billing';
@@ -51,6 +53,8 @@ const Sites = () => {
   const [isGoLiveOpen, setIsGoLiveOpen] = useState(false);
   const [isTransferOpen, setIsTransferOpen] = useState(false);
   const [isUpgradeOpen, setIsUpgradeOpen] = useState(false);
+  const [isMultiSiteOpen, setIsMultiSiteOpen] = useState(false);
+  const [isSEOManagerOpen, setIsSEOManagerOpen] = useState(false);
   const [selectedSite, setSelectedSite] = useState<typeof initialSites[0] | null>(null);
   const [sites, setSites] = useState(initialSites);
   const [isControlCenterLive, setIsControlCenterLive] = useState(false);
@@ -111,6 +115,28 @@ const Sites = () => {
 
   const handleUpgrade = (site: typeof initialSites[0]) => { setSelectedSite(site); setIsUpgradeOpen(true); };
 
+  const handleSEOManager = (site: typeof initialSites[0]) => { setSelectedSite(site); setIsSEOManagerOpen(true); };
+
+  const handleMultiSiteBuild = (generatedSites: any[]) => {
+    const newSites = generatedSites.map(gs => ({
+      id: gs.id,
+      tenantId: currentTenant?.id || 'tenant-1',
+      name: gs.name,
+      url: `https://${gs.domain}`,
+      domain: gs.domain,
+      status: 'active' as const,
+      dashboards: [],
+      healthCheck: { lastCheck: new Date().toISOString(), status: 'active' as const, responseTime: 150, uptime: 100 },
+      lastSync: new Date().toISOString(),
+      metrics: { traffic: 0, trafficChange: 0, orders: 0, ordersChange: 0 },
+      sparklineData: [0, 0, 0, 0, 0, 0, 0],
+      ownerType: 'admin' as SiteOwnerType,
+      demoMode: { isDemo: true, isLive: false },
+      appColor: gs.theme.primaryColor,
+    }));
+    setSites(prev => [...newSites, ...prev]);
+  };
+
   const handleUpgradeComplete = (newTier: SubscriptionTier) => {
     if (!selectedSite) return;
     setSites(prev => prev.map(s => s.id === selectedSite.id && s.billing ? { ...s, billing: { ...s.billing, subscriptionTier: newTier } } : s));
@@ -155,6 +181,7 @@ const Sites = () => {
               {site.ownerType === 'customer' && site.billing && (
                 <DropdownMenuItem className="gap-2" onClick={() => handleUpgrade(site)}><CreditCard className="h-4 w-4" />View Billing</DropdownMenuItem>
               )}
+              <DropdownMenuItem className="gap-2" onClick={() => handleSEOManager(site)}><SearchIcon className="h-4 w-4" />SEO Manager</DropdownMenuItem>
               <DropdownMenuSeparator />
               {site.ownerType === 'admin' && (
                 <DropdownMenuItem className="gap-2 text-primary" onClick={() => handleTransfer(site)}><ArrowRight className="h-4 w-4" />Transfer to Customer</DropdownMenuItem>
@@ -179,7 +206,21 @@ const Sites = () => {
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" className="gap-1.5"><RefreshCw className="h-3.5 w-3.5" />Health Check</Button>
-            <Button size="sm" className="gap-1.5" onClick={() => setIsCreateSiteOpen(true)}><Globe className="h-3.5 w-3.5" />Create Site</Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" className="gap-1.5">
+                  <Globe className="h-3.5 w-3.5" />Create Site<ChevronDown className="h-3 w-3 ml-1" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setIsCreateSiteOpen(true)} className="gap-2">
+                  <Globe className="h-4 w-4" />Single Site
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setIsMultiSiteOpen(true)} className="gap-2">
+                  <Layers className="h-4 w-4" />Multi-Site Builder
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </div>
@@ -235,6 +276,8 @@ const Sites = () => {
       </Tabs>
 
       <CreateSiteWithDomainDialog isOpen={isCreateSiteOpen} onClose={() => setIsCreateSiteOpen(false)} onCreate={handleCreateSite} tenantId={currentTenant?.id || 'tenant-1'} />
+      <MultiSiteBuilderDialog isOpen={isMultiSiteOpen} onClose={() => setIsMultiSiteOpen(false)} onBuild={handleMultiSiteBuild} />
+      <SEOManagerDialog isOpen={isSEOManagerOpen} onClose={() => setIsSEOManagerOpen(false)} site={selectedSite} onSave={(seoData) => console.log('SEO saved:', seoData)} />
       {selectedSite && (<><GoLiveDialog isOpen={isGoLiveOpen} onClose={() => setIsGoLiveOpen(false)} siteName={selectedSite.name} siteDomain={selectedSite.domain || selectedSite.url.replace('https://', '')} domainPrice={12.99} credentials={siteCredentials} onGoLive={handleGoLiveComplete} /><SiteTransferDialog isOpen={isTransferOpen} onClose={() => setIsTransferOpen(false)} siteName={selectedSite.name} siteId={selectedSite.id} onTransfer={handleTransferComplete} /><SubscriptionUpgradeDialog isOpen={isUpgradeOpen} onClose={() => setIsUpgradeOpen(false)} siteName={selectedSite.name} currentTier={selectedSite.billing?.subscriptionTier || 'free'} onUpgrade={handleUpgradeComplete} /></>)}
     </DashboardLayout>
   );
