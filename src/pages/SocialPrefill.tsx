@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { 
   RefreshCw, 
   Download, 
@@ -7,24 +7,30 @@ import {
   FileText,
   User,
   Sparkles,
-  Copy
+  Copy,
+  Check,
+  AlertTriangle
 } from 'lucide-react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import { PlatformCard } from '@/components/social/PlatformCard';
+import { MultiPlatformChecker } from '@/components/social/UsernameValidator';
 import { generatePersona, generatePlatformFields, GeneratedPersonaData } from '@/utils/personaGenerator';
 import { platformTemplates } from '@/types/social';
 import { useTenant } from '@/contexts/TenantContext';
 import { useToast } from '@/hooks/use-toast';
+import { checkUsernameAvailabilityAllPlatforms, validatePassword } from '@/utils/usernameValidator';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { cn } from '@/lib/utils';
 
 export default function SocialPrefill() {
   const { currentTenant } = useTenant();
@@ -34,6 +40,9 @@ export default function SocialPrefill() {
   
   const [persona, setPersona] = useState<GeneratedPersonaData>(() => generatePersona(domain));
   const [customDomain, setCustomDomain] = useState(domain);
+  const [isValidating, setIsValidating] = useState(false);
+  const [usernameAvailability, setUsernameAvailability] = useState<Record<string, { available: boolean; suggestion?: string }>>({});
+  const [passwordValidation, setPasswordValidation] = useState<{ isValid: boolean; errors: string[] }>({ isValid: true, errors: [] });
 
   const platformFields = useMemo(() => {
     const fields: Record<string, Record<string, string>> = {};
@@ -42,6 +51,40 @@ export default function SocialPrefill() {
     });
     return fields;
   }, [persona, customDomain]);
+
+  // Validate username across all platforms when it changes
+  useEffect(() => {
+    const validateUsername = async () => {
+      if (!persona.username || persona.username.length < 2) {
+        setUsernameAvailability({});
+        return;
+      }
+
+      setIsValidating(true);
+      try {
+        const results = await checkUsernameAvailabilityAllPlatforms(persona.username);
+        setUsernameAvailability(results);
+      } catch (error) {
+        console.error('Username validation error:', error);
+      } finally {
+        setIsValidating(false);
+      }
+    };
+
+    const timer = setTimeout(validateUsername, 500);
+    return () => clearTimeout(timer);
+  }, [persona.username]);
+
+  // Validate password
+  useEffect(() => {
+    if (persona.password) {
+      const result = validatePassword(persona.password);
+      setPasswordValidation(result);
+    }
+  }, [persona.password]);
+
+  const availablePlatformsCount = Object.values(usernameAvailability).filter(v => v.available).length;
+  const totalPlatforms = Object.keys(usernameAvailability).length;
 
   const regeneratePersona = () => {
     setPersona(generatePersona(customDomain));
@@ -64,6 +107,7 @@ export default function SocialPrefill() {
     const data = {
       persona,
       platforms: platformFields,
+      usernameAvailability,
       generatedAt: new Date().toISOString(),
     };
 
@@ -101,6 +145,10 @@ export default function SocialPrefill() {
       .join('\n');
     await navigator.clipboard.writeText(text);
     toast({ title: 'Persona copied to clipboard!' });
+  };
+
+  const handleUsernameChange = (newUsername: string) => {
+    setPersona(prev => ({ ...prev, username: newUsername }));
   };
 
   return (
@@ -145,7 +193,7 @@ export default function SocialPrefill() {
         </div>
 
         {/* Persona Card */}
-        <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+        <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent overflow-hidden">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <User className="h-5 w-5 text-primary" />
@@ -161,9 +209,18 @@ export default function SocialPrefill() {
                 <Label className="text-xs text-muted-foreground">Full Name</Label>
                 <p className="font-medium">{persona.fullName}</p>
               </div>
-              <div>
+              <div className="space-y-1">
                 <Label className="text-xs text-muted-foreground">Username</Label>
-                <p className="font-medium text-primary">{persona.username}</p>
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={persona.username}
+                    onChange={(e) => handleUsernameChange(e.target.value)}
+                    className="h-8 text-sm font-medium text-primary bg-muted/50"
+                  />
+                  {isValidating && (
+                    <RefreshCw className="h-4 w-4 animate-spin text-muted-foreground" />
+                  )}
+                </div>
               </div>
               <div>
                 <Label className="text-xs text-muted-foreground">Email</Label>
@@ -190,6 +247,69 @@ export default function SocialPrefill() {
                 <p className="font-medium truncate">{persona.recoveryEmail}</p>
               </div>
             </div>
+
+            {/* Username Availability Status */}
+            {totalPlatforms > 0 && (
+              <div className="p-3 rounded-lg bg-muted/50 border border-border mb-4 animate-fade-in">
+                <div className="flex items-center justify-between mb-2">
+                  <Label className="text-xs font-medium">Username Availability</Label>
+                  <Badge variant={availablePlatformsCount === totalPlatforms ? "default" : "secondary"} className="gap-1">
+                    {availablePlatformsCount === totalPlatforms ? (
+                      <Check className="h-3 w-3" />
+                    ) : (
+                      <AlertTriangle className="h-3 w-3" />
+                    )}
+                    {availablePlatformsCount}/{totalPlatforms} available
+                  </Badge>
+                </div>
+                <MultiPlatformChecker 
+                  username={persona.username} 
+                  platforms={platformTemplates.map(t => ({ 
+                    platform: t.platform, 
+                    name: t.name, 
+                    color: t.color 
+                  }))} 
+                />
+                
+                {/* Suggestions for unavailable platforms */}
+                {Object.entries(usernameAvailability).some(([_, v]) => !v.available && v.suggestion) && (
+                  <div className="mt-3 pt-3 border-t border-border">
+                    <Label className="text-xs text-muted-foreground">Suggested alternatives:</Label>
+                    <div className="flex flex-wrap gap-2 mt-1">
+                      {Object.entries(usernameAvailability)
+                        .filter(([_, v]) => !v.available && v.suggestion)
+                        .slice(0, 3)
+                        .map(([platform, v]) => (
+                          <Button
+                            key={platform}
+                            variant="outline"
+                            size="sm"
+                            className="h-7 text-xs gap-1 hover:bg-primary/10 hover:text-primary"
+                            onClick={() => handleUsernameChange(v.suggestion!)}
+                          >
+                            {v.suggestion}
+                          </Button>
+                        ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Password Validation */}
+            {!passwordValidation.isValid && (
+              <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 mb-4 animate-fade-in">
+                <Label className="text-xs font-medium text-destructive flex items-center gap-1">
+                  <AlertTriangle className="h-3 w-3" />
+                  Password Issues
+                </Label>
+                <ul className="mt-1 space-y-0.5">
+                  {passwordValidation.errors.map((error, i) => (
+                    <li key={i} className="text-xs text-destructive/80">{error}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
             
             <div className="flex items-center gap-4 pt-4 border-t border-border">
               <div className="flex-1">
@@ -217,17 +337,23 @@ export default function SocialPrefill() {
 
         {/* Platform Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {platformTemplates.map((template) => (
-            <PlatformCard
+          {platformTemplates.map((template, index) => (
+            <div 
               key={template.platform}
-              platform={template.platform}
-              name={template.name}
-              color={template.color}
-              iconName={template.icon}
-              fields={platformFields[template.platform] || {}}
-              fieldLabels={template.fields}
-              onRegenerate={() => regeneratePlatform(template.platform)}
-            />
+              className="animate-fade-in"
+              style={{ animationDelay: `${index * 50}ms` }}
+            >
+              <PlatformCard
+                platform={template.platform}
+                name={template.name}
+                color={template.color}
+                iconName={template.icon}
+                fields={platformFields[template.platform] || {}}
+                fieldLabels={template.fields}
+                onRegenerate={() => regeneratePlatform(template.platform)}
+                isAvailable={usernameAvailability[template.platform]?.available}
+              />
+            </div>
           ))}
         </div>
       </div>
