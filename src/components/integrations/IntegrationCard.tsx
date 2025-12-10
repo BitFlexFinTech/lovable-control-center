@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 interface IntegrationCardProps {
   integration: Integration;
   onConfigure?: () => void;
+  onConnect?: () => void;
   onRemoveApp?: (siteId: string) => void;
   animationDelay?: number;
 }
@@ -15,6 +16,7 @@ interface IntegrationCardProps {
 export function IntegrationCard({ 
   integration, 
   onConfigure,
+  onConnect,
   onRemoveApp,
   animationDelay = 0 
 }: IntegrationCardProps) {
@@ -102,9 +104,15 @@ export function IntegrationCard({
             </Button>
           </>
         ) : (
-          <Button variant="outline" size="sm" className="flex-1 gap-1.5" disabled>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="flex-1 gap-1.5" 
+            onClick={onConnect}
+            disabled={!onConnect}
+          >
             <Import className="h-3.5 w-3.5" />
-            Not in use
+            {onConnect ? 'Connect' : 'Not in use'}
           </Button>
         )}
       </div>
