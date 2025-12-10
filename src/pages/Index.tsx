@@ -3,6 +3,7 @@ import { RefreshCw, Plus, Sparkles } from 'lucide-react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { SiteAnalyticsCard } from '@/components/dashboard/SiteAnalyticsCard';
 import { AISuggestionBox } from '@/components/dashboard/AISuggestionBox';
+import { ImplementationPreviewDialog } from '@/components/dashboard/ImplementationPreviewDialog';
 import { ProductionReadiness } from '@/components/dashboard/ProductionReadiness';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -17,18 +18,25 @@ const Index = () => {
   const { toast } = useToast();
   const { currentTenant } = useTenant();
   const [suggestions, setSuggestions] = useState<AISuggestion[]>(() => generateAISuggestions(sites));
+  const [previewSuggestion, setPreviewSuggestion] = useState<AISuggestion | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   const filteredSites = currentTenant
     ? sites.filter(site => site.tenantId === currentTenant.id)
     : sites;
 
   const handleImplementSuggestion = (suggestion: AISuggestion) => {
+    setPreviewSuggestion(suggestion);
+    setIsPreviewOpen(true);
+  };
+
+  const handleConfirmImplement = (suggestion: AISuggestion) => {
     toast({
-      title: 'Implementation Started',
-      description: `Implementing: ${suggestion.title}`,
+      title: 'Implementation Complete',
+      description: `Successfully implemented: ${suggestion.title}`,
     });
     setSuggestions(prev => prev.map(s => 
-      s.id === suggestion.id ? { ...s, status: 'implementing' as const } : s
+      s.id === suggestion.id ? { ...s, status: 'completed' as const } : s
     ));
   };
 
@@ -183,6 +191,14 @@ const Index = () => {
           />
         </>
       )}
+
+      {/* Implementation Preview Dialog */}
+      <ImplementationPreviewDialog
+        isOpen={isPreviewOpen}
+        onClose={() => setIsPreviewOpen(false)}
+        suggestion={previewSuggestion}
+        onConfirmImplement={handleConfirmImplement}
+      />
     </DashboardLayout>
   );
 };

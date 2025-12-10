@@ -7,6 +7,7 @@ import { TenantProvider } from "@/contexts/TenantContext";
 import { CartProvider } from "@/contexts/CartContext";
 import { IntegrationsProvider } from "@/contexts/IntegrationsContext";
 import { PasswordManagerProvider } from "@/contexts/PasswordManagerContext";
+import { TwoFactorProvider } from "@/contexts/TwoFactorContext";
 import { TourProvider } from "@/contexts/TourContext";
 import { TourOverlay } from "@/components/tour/TourOverlay";
 import Index from "./pages/Index";
@@ -32,28 +33,30 @@ const App = () => (
         <CartProvider>
           <IntegrationsProvider>
             <PasswordManagerProvider>
-              <TourProvider>
-                <Toaster />
-                <Sonner />
-                <TourOverlay />
-                <BrowserRouter>
-                  <Routes>
-                    <Route path="/" element={<Index />} />
-                    <Route path="/mail" element={<Mail />} />
-                    <Route path="/social-prefill" element={<SocialPrefill />} />
-                    <Route path="/passwords" element={<PasswordManager />} />
-                    <Route path="/tenants" element={<Tenants />} />
-                    <Route path="/sites" element={<Sites />} />
-                    <Route path="/users" element={<Users />} />
-                    <Route path="/roles" element={<Roles />} />
-                    <Route path="/integrations" element={<Integrations />} />
-                    <Route path="/audit-logs" element={<AuditLogs />} />
-                    <Route path="/settings" element={<Settings />} />
-                    <Route path="/guided-tour" element={<GuidedTour />} />
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </BrowserRouter>
-              </TourProvider>
+              <TwoFactorProvider>
+                <TourProvider>
+                  <Toaster />
+                  <Sonner />
+                  <TourOverlay />
+                  <BrowserRouter>
+                    <Routes>
+                      <Route path="/" element={<Index />} />
+                      <Route path="/mail" element={<Mail />} />
+                      <Route path="/social-prefill" element={<SocialPrefill />} />
+                      <Route path="/passwords" element={<PasswordManager />} />
+                      <Route path="/tenants" element={<Tenants />} />
+                      <Route path="/sites" element={<Sites />} />
+                      <Route path="/users" element={<Users />} />
+                      <Route path="/roles" element={<Roles />} />
+                      <Route path="/integrations" element={<Integrations />} />
+                      <Route path="/audit-logs" element={<AuditLogs />} />
+                      <Route path="/settings" element={<Settings />} />
+                      <Route path="/guided-tour" element={<GuidedTour />} />
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </BrowserRouter>
+                </TourProvider>
+              </TwoFactorProvider>
             </PasswordManagerProvider>
           </IntegrationsProvider>
         </CartProvider>

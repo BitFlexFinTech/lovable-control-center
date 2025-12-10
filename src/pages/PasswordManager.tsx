@@ -7,7 +7,8 @@ import {
   ChevronUp,
   FileJson,
   FileSpreadsheet,
-  Filter
+  Filter,
+  Shield
 } from 'lucide-react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
@@ -32,8 +33,10 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import { SiteCredentialGroup } from '@/components/passwords/SiteCredentialGroup';
+import { TwoFactorManager } from '@/components/passwords/TwoFactorManager';
 import { GoLiveDialog } from '@/components/sites/GoLiveDialog';
 import { usePasswordManager } from '@/contexts/PasswordManagerContext';
+import { useTwoFactor } from '@/contexts/TwoFactorContext';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
@@ -48,6 +51,7 @@ export default function PasswordManager() {
     getTotalCount,
     promoteToLive,
   } = usePasswordManager();
+  const { getAccountCount } = useTwoFactor();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [siteFilter, setSiteFilter] = useState<string>('all');
@@ -192,7 +196,7 @@ export default function PasswordManager() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4 mb-6 opacity-0 animate-fade-in" style={{ animationDelay: '50ms' }}>
+      <div className="grid grid-cols-4 gap-4 mb-6 opacity-0 animate-fade-in" style={{ animationDelay: '50ms' }}>
         <div className="p-4 rounded-xl border border-border bg-card">
           <p className="text-2xl font-bold">{getTotalCount()}</p>
           <p className="text-sm text-muted-foreground">Total Credentials</p>
@@ -204,6 +208,13 @@ export default function PasswordManager() {
         <div className="p-4 rounded-xl border border-status-active/30 bg-status-active/5">
           <p className="text-2xl font-bold text-status-active">{getLiveCount()}</p>
           <p className="text-sm text-muted-foreground">Live</p>
+        </div>
+        <div className="p-4 rounded-xl border border-primary/30 bg-primary/5">
+          <div className="flex items-center gap-2">
+            <Shield className="h-5 w-5 text-primary" />
+            <p className="text-2xl font-bold text-primary">{getAccountCount()}</p>
+          </div>
+          <p className="text-sm text-muted-foreground">2FA Accounts</p>
         </div>
       </div>
 
@@ -243,6 +254,9 @@ export default function PasswordManager() {
           </SelectContent>
         </Select>
       </div>
+
+      {/* 2FA Section */}
+      <TwoFactorManager />
 
       {/* Demo Section */}
       <Collapsible open={demoExpanded} onOpenChange={setDemoExpanded} className="mb-6">
