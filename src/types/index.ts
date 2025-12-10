@@ -1,6 +1,6 @@
 import { SiteOwnerType, SubscriptionTier, BillingInfo, PaymentHistoryItem } from './billing';
 
-export type Environment = 'production' | 'staging' | 'development';
+export type Environment = 'production' | 'staging' | 'sandbox';
 
 export type SiteStatus = 'active' | 'warning' | 'inactive';
 
