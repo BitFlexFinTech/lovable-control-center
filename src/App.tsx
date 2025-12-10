@@ -13,6 +13,7 @@ import { TourProvider } from "@/contexts/TourContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import { HealthMonitorProvider } from "@/contexts/HealthMonitorContext";
 import { TourOverlay } from "@/components/tour/TourOverlay";
+import { CommandPalette } from "@/components/layout/CommandPalette";
 import Index from "./pages/Index";
 import Tenants from "./pages/Tenants";
 import Sites from "./pages/Sites";
@@ -44,6 +45,7 @@ const App = () => (
                         <Toaster />
                         <Sonner />
                         <TourOverlay />
+                        <CommandPalette />
                         <BrowserRouter>
                           <Routes>
                             <Route path="/" element={<Index />} />

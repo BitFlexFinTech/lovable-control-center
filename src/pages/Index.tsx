@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { RefreshCw, Plus, Sparkles, Activity, Wifi } from 'lucide-react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { SiteAnalyticsCard } from '@/components/dashboard/SiteAnalyticsCard';
@@ -29,37 +29,36 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useTenant } from '@/contexts/TenantContext';
 import { useHealthMonitor } from '@/contexts/HealthMonitorContext';
-import { sites } from '@/data/seed-data';
-import { generateAISuggestions } from '@/utils/aiSuggestionAnalyzer';
+import { useSites, useSuggestions, useDashboardRefresh } from '@/hooks/useDashboardData';
 import { AISuggestion } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 
 const Index = () => {
   const { toast } = useToast();
-  const { currentTenant } = useTenant();
   const { isMonitoring, lastUpdate } = useHealthMonitor();
-  const [suggestions, setSuggestions] = useState<AISuggestion[]>(() => generateAISuggestions(sites));
+  const { refresh } = useDashboardRefresh();
+  
+  // React Query hooks for data fetching
+  const { data: filteredSites = [], isLoading: sitesLoading, isFetching: sitesRefetching } = useSites();
+  const { data: queriedSuggestions = [], isLoading: suggestionsLoading } = useSuggestions(filteredSites);
+  
+  const [suggestions, setSuggestions] = useState<AISuggestion[]>([]);
   const [previewSuggestion, setPreviewSuggestion] = useState<AISuggestion | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
 
-  // Simulate initial data loading
-  useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 1200);
-    return () => clearTimeout(timer);
-  }, []);
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  // Sync suggestions from query to local state for mutations
+  useState(() => {
+    if (queriedSuggestions.length > 0 && suggestions.length === 0) {
+      setSuggestions(queriedSuggestions);
+    }
+  });
 
-  const filteredSites = currentTenant
-    ? sites.filter(site => site.tenantId === currentTenant.id)
-    : sites;
+  const isLoading = sitesLoading || suggestionsLoading;
+  const isRefreshing = sitesRefetching;
 
   const handleRefresh = async () => {
-    setIsRefreshing(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setIsRefreshing(false);
+    await refresh();
     toast({
       title: 'Dashboard Refreshed',
       description: 'All data has been updated.',
@@ -118,16 +117,11 @@ const Index = () => {
         <div className="flex items-center justify-between">
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-semibold tracking-tight">
-                {currentTenant ? currentTenant.name : 'Overview'}
-              </h1>
+              <h1 className="text-2xl font-semibold tracking-tight">Overview</h1>
               <RealTimeIndicator isConnected={isMonitoring} lastUpdate={lastUpdate} />
             </div>
             <p className="text-muted-foreground mt-1">
-              {currentTenant 
-                ? `Manage ${currentTenant.name} sites and settings`
-                : 'Monitor all your sites and tenants from one place'
-              }
+              Monitor all your sites and tenants from one place
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -265,8 +259,7 @@ const Index = () => {
         <span className="text-sm font-medium text-muted-foreground">Site Analytics</span>
         <Separator className="flex-1" />
         <Badge variant="secondary">
-          {filteredSites.length} site{filteredSites.length !== 1 ? 's' : ''} 
-          {currentTenant ? ` in ${currentTenant.name}` : ''}
+          {filteredSites.length} site{filteredSites.length !== 1 ? 's' : ''}
         </Badge>
       </div>
 
