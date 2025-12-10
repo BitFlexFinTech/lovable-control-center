@@ -1,9 +1,11 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { MoreHorizontal, ExternalLink, Settings, RefreshCw, Search, Filter, Globe, Rocket } from 'lucide-react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { StatusPill } from '@/components/dashboard/StatusPill';
 import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 import {
   Table,
   TableBody,
@@ -23,15 +25,18 @@ import { useTenant } from '@/contexts/TenantContext';
 import { sites as initialSites, tenants } from '@/data/seed-data';
 import { CreateSiteWithDomainDialog } from '@/components/mail/CreateSiteWithDomainDialog';
 import { GoLiveDialog } from '@/components/sites/GoLiveDialog';
+import { ControlCenterCard } from '@/components/sites/ControlCenterCard';
 import { usePasswordManager } from '@/contexts/PasswordManagerContext';
 import { useToast } from '@/hooks/use-toast';
 
 const Sites = () => {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [isCreateSiteOpen, setIsCreateSiteOpen] = useState(false);
   const [isGoLiveOpen, setIsGoLiveOpen] = useState(false);
   const [selectedSite, setSelectedSite] = useState<typeof initialSites[0] | null>(null);
   const [sites, setSites] = useState(initialSites);
+  const [isControlCenterLive, setIsControlCenterLive] = useState(false);
   const { currentTenant } = useTenant();
   const { credentials } = usePasswordManager();
   const [searchQuery, setSearchQuery] = useState('');
@@ -61,7 +66,6 @@ const Sites = () => {
   };
 
   const handleCreateSite = (siteData: any, emailAccounts: any[]) => {
-    // Add new site to the list
     const newSite = {
       id: `site-${Date.now()}`,
       tenantId: currentTenant?.id || 'tenant-1',
@@ -103,6 +107,21 @@ const Sites = () => {
     toast({ title: 'Site is now live!', description: `${selectedSite.name} has been published.` });
   };
 
+  const handleControlCenterGoLive = () => {
+    toast({ 
+      title: 'Control Center is now live!', 
+      description: 'All systems are operational in production mode.' 
+    });
+    setIsControlCenterLive(true);
+  };
+
+  const handleHealthCheck = () => {
+    toast({ 
+      title: 'Health check initiated', 
+      description: 'Running diagnostics on all systems...' 
+    });
+  };
+
   const siteCredentials = selectedSite 
     ? credentials.filter(c => c.siteId === selectedSite.id)
     : [];
@@ -131,8 +150,25 @@ const Sites = () => {
         </div>
       </div>
 
+      {/* Pinned Control Center Card */}
+      <div className="mb-6">
+        <ControlCenterCard
+          isLive={isControlCenterLive}
+          onGoLive={handleControlCenterGoLive}
+          onSettings={() => navigate('/settings')}
+          onHealthCheck={handleHealthCheck}
+        />
+      </div>
+
+      {/* Divider */}
+      <div className="flex items-center gap-3 mb-4 opacity-0 animate-fade-in" style={{ animationDelay: '100ms' }}>
+        <span className="text-sm font-medium text-muted-foreground">Created Sites</span>
+        <Separator className="flex-1" />
+        <Badge variant="secondary">{filteredSites.length} sites</Badge>
+      </div>
+
       {/* Search and Filters */}
-      <div className="mb-6 flex items-center gap-3 opacity-0 animate-slide-up" style={{ animationDelay: '50ms' }}>
+      <div className="mb-6 flex items-center gap-3 opacity-0 animate-slide-up" style={{ animationDelay: '150ms' }}>
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <input
@@ -150,7 +186,7 @@ const Sites = () => {
       </div>
 
       {/* Sites Table */}
-      <div className="rounded-xl border border-border bg-card overflow-hidden opacity-0 animate-slide-up" style={{ animationDelay: '100ms' }}>
+      <div className="rounded-xl border border-border bg-card overflow-hidden opacity-0 animate-slide-up" style={{ animationDelay: '200ms' }}>
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent border-border">
@@ -171,9 +207,17 @@ const Sites = () => {
               return (
                 <TableRow key={site.id} className="border-border hover:bg-muted/50">
                   <TableCell>
-                    <div>
-                      <p className="font-medium">{site.name}</p>
-                      <p className="text-sm text-muted-foreground truncate max-w-[200px]">{site.url}</p>
+                    <div className="flex items-center gap-3">
+                      {site.appColor && (
+                        <div 
+                          className="w-1 h-8 rounded-full" 
+                          style={{ backgroundColor: site.appColor }}
+                        />
+                      )}
+                      <div>
+                        <p className="font-medium">{site.name}</p>
+                        <p className="text-sm text-muted-foreground truncate max-w-[200px]">{site.url}</p>
+                      </div>
                     </div>
                   </TableCell>
                   <TableCell>

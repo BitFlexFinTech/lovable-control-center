@@ -115,6 +115,9 @@ export interface Site {
   integrationCount?: number;
 }
 
+export type UserSource = 'control-center' | 'app';
+export type UserEnvironment = 'sandbox' | 'live';
+
 export interface User {
   id: string;
   email: string;
@@ -123,6 +126,40 @@ export interface User {
   role: UserRole;
   tenantAssignments: string[];
   lastActive: string;
+  createdAt: string;
+  source: UserSource;
+  sourceAppId?: string;
+  sourceAppName?: string;
+  sourceAppColor?: string;
+  environment: UserEnvironment;
+}
+
+export interface ControlCenterStatus {
+  isLive: boolean;
+  environment: 'development' | 'staging' | 'production';
+  readinessPercent: number;
+  lastHealthCheck: string;
+  uptime: number;
+  responseTime: number;
+  goLiveAt?: string;
+}
+
+export interface AISuggestion {
+  id: string;
+  title: string;
+  description: string;
+  category: 'performance' | 'security' | 'ux' | 'seo' | 'integration';
+  priority: 'high' | 'medium' | 'low';
+  targetSiteId: string;
+  targetSiteName: string;
+  expectedImpact: string;
+  technicalDetails: {
+    filesAffected: string[];
+    estimatedTime: string;
+    complexity: 'simple' | 'moderate' | 'complex';
+    prompt: string;
+  };
+  status: 'pending' | 'implementing' | 'completed' | 'dismissed';
   createdAt: string;
 }
 
