@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_impersonation_sessions: {
+        Row: {
+          admin_user_id: string
+          ended_at: string | null
+          id: string
+          impersonated_role: Database["public"]["Enums"]["app_role"]
+          is_active: boolean | null
+          reason: string | null
+          started_at: string | null
+        }
+        Insert: {
+          admin_user_id: string
+          ended_at?: string | null
+          id?: string
+          impersonated_role: Database["public"]["Enums"]["app_role"]
+          is_active?: boolean | null
+          reason?: string | null
+          started_at?: string | null
+        }
+        Update: {
+          admin_user_id?: string
+          ended_at?: string | null
+          id?: string
+          impersonated_role?: Database["public"]["Enums"]["app_role"]
+          is_active?: boolean | null
+          reason?: string | null
+          started_at?: string | null
+        }
+        Relationships: []
+      }
       audit_logs: {
         Row: {
           action: string
@@ -121,6 +151,42 @@ export type Database = {
           id?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      role_permissions: {
+        Row: {
+          can_create: boolean | null
+          can_delete: boolean | null
+          can_read: boolean | null
+          can_update: boolean | null
+          created_at: string | null
+          feature: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at: string | null
+        }
+        Insert: {
+          can_create?: boolean | null
+          can_delete?: boolean | null
+          can_read?: boolean | null
+          can_update?: boolean | null
+          created_at?: string | null
+          feature: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at?: string | null
+        }
+        Update: {
+          can_create?: boolean | null
+          can_delete?: boolean | null
+          can_read?: boolean | null
+          can_update?: boolean | null
+          created_at?: string | null
+          feature?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -245,9 +311,25 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      users_with_roles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string | null
+          email: string | null
+          full_name: string | null
+          id: string | null
+          roles: Json | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      check_permission: {
+        Args: { _action: string; _feature: string; _user_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
