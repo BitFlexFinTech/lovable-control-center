@@ -2,6 +2,7 @@ import { RefreshCw, Plus, MoreHorizontal } from 'lucide-react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { KPICard } from '@/components/dashboard/KPICard';
 import { SiteCard } from '@/components/dashboard/SiteCard';
+import { ProductionReadiness } from '@/components/dashboard/ProductionReadiness';
 import { Button } from '@/components/ui/button';
 import { useTenant } from '@/contexts/TenantContext';
 import { kpis, sites } from '@/data/seed-data';
@@ -42,11 +43,12 @@ const Index = () => {
         </div>
       </div>
 
-      {/* KPIs */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      {/* KPIs + Production Readiness */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
         {kpis.map((kpi, index) => (
           <KPICard key={kpi.label} kpi={kpi} delay={index * 50} />
         ))}
+        <ProductionReadiness />
       </div>
 
       {/* Sites Section */}

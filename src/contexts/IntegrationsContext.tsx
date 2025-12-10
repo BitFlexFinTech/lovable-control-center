@@ -1,5 +1,6 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Integration, LinkedApp } from '@/types';
+import { CONTROL_CENTER_INTEGRATIONS } from '@/types/credentials';
 
 // App color palette
 export const APP_COLORS = [
@@ -14,6 +15,15 @@ export const APP_COLORS = [
   '#6366F1', // Indigo
   '#84CC16', // Lime
 ];
+
+// Control Center app identifier
+const CONTROL_CENTER_APP: LinkedApp = {
+  siteId: 'control-center',
+  siteName: 'Control Center',
+  domain: 'control-center.lovable.app',
+  color: '#06B6D4', // Cyan for Control Center
+  linkedAt: new Date().toISOString(),
+};
 
 // Default integrations catalog - expanded with all Control Center requirements
 const DEFAULT_INTEGRATIONS: Integration[] = [
@@ -76,6 +86,7 @@ interface IntegrationsContextType {
   getAppsForIntegration: (integrationId: string) => LinkedApp[];
   importIntegrationsForApp: (integrationIds: string[], app: LinkedApp) => void;
   getNextAppColor: () => string;
+  isControlCenterInitialized: boolean;
 }
 
 const IntegrationsContext = createContext<IntegrationsContextType | undefined>(undefined);
@@ -83,6 +94,26 @@ const IntegrationsContext = createContext<IntegrationsContextType | undefined>(u
 export function IntegrationsProvider({ children }: { children: ReactNode }) {
   const [integrations, setIntegrations] = useState<Integration[]>(DEFAULT_INTEGRATIONS);
   const [usedColors, setUsedColors] = useState<string[]>([]);
+  const [isControlCenterInitialized, setIsControlCenterInitialized] = useState(false);
+
+  // Auto-import Control Center integrations on first load
+  useEffect(() => {
+    if (!isControlCenterInitialized) {
+      setIntegrations(prev => prev.map(integration => {
+        if (CONTROL_CENTER_INTEGRATIONS.includes(integration.id)) {
+          const alreadyLinked = integration.linkedApps.some(a => a.siteId === CONTROL_CENTER_APP.siteId);
+          if (alreadyLinked) return integration;
+          return {
+            ...integration,
+            status: 'imported' as const,
+            linkedApps: [...integration.linkedApps, CONTROL_CENTER_APP],
+          };
+        }
+        return integration;
+      }));
+      setIsControlCenterInitialized(true);
+    }
+  }, [isControlCenterInitialized]);
 
   const getNextAppColor = (): string => {
     const availableColors = APP_COLORS.filter(c => !usedColors.includes(c));
@@ -154,6 +185,7 @@ export function IntegrationsProvider({ children }: { children: ReactNode }) {
       getAppsForIntegration,
       importIntegrationsForApp,
       getNextAppColor,
+      isControlCenterInitialized,
     }}>
       {children}
     </IntegrationsContext.Provider>

@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Integration } from '@/types';
 import { AppTag } from './AppTag';
 import { cn } from '@/lib/utils';
+import { CONTROL_CENTER_ANALYSIS } from '@/utils/controlCenterAnalyzer';
 
 interface IntegrationCardProps {
   integration: Integration;
@@ -11,18 +12,36 @@ interface IntegrationCardProps {
   onConnect?: () => void;
   onRemoveApp?: (siteId: string) => void;
   animationDelay?: number;
+  showCriticality?: boolean;
 }
+
+type Criticality = 'critical' | 'important' | 'optional';
+
+function getCriticality(integrationId: string): Criticality {
+  if (CONTROL_CENTER_ANALYSIS.criticalIntegrations.some(i => i.id === integrationId)) return 'critical';
+  if (CONTROL_CENTER_ANALYSIS.importantIntegrations.some(i => i.id === integrationId)) return 'important';
+  return 'optional';
+}
+
+const criticalityConfig: Record<Criticality, { label: string; className: string }> = {
+  critical: { label: 'Critical', className: 'bg-red-500/10 text-red-500 border-red-500/20' },
+  important: { label: 'Important', className: 'bg-amber-500/10 text-amber-500 border-amber-500/20' },
+  optional: { label: 'Optional', className: 'bg-muted text-muted-foreground border-border' },
+};
 
 export function IntegrationCard({ 
   integration, 
   onConfigure,
   onConnect,
   onRemoveApp,
-  animationDelay = 0 
+  animationDelay = 0,
+  showCriticality = false,
 }: IntegrationCardProps) {
   const hasLinkedApps = integration.linkedApps.length > 0;
   const isImported = integration.status === 'imported' || integration.status === 'active';
   const needsSetup = isImported && integration.status === 'imported';
+  const criticality = getCriticality(integration.id);
+  const criticalityStyle = criticalityConfig[criticality];
 
   return (
     <div
@@ -37,6 +56,14 @@ export function IntegrationCard({
           <span className="text-2xl">{integration.icon}</span>
           <div>
             <h3 className="font-semibold">{integration.name}</h3>
+            {showCriticality && (
+              <span className={cn(
+                "inline-block text-[10px] px-1.5 py-0.5 rounded border mt-1",
+                criticalityStyle.className
+              )}>
+                {criticalityStyle.label}
+              </span>
+            )}
           </div>
         </div>
         {isImported && (
