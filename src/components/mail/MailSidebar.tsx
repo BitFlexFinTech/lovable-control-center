@@ -1,3 +1,4 @@
+import { DragEvent } from 'react';
 import { 
   Inbox, 
   Send, 
@@ -6,7 +7,8 @@ import {
   Trash2, 
   AlertCircle,
   Plus,
-  ChevronDown
+  ChevronDown,
+  RefreshCw
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MailFolder, EmailAccount } from '@/types/mail';
@@ -27,6 +29,12 @@ interface MailSidebarProps {
   onAccountChange: (account: EmailAccount | null) => void;
   onCompose: () => void;
   onCreateAccount: () => void;
+  onEmailSync?: () => void;
+  // Drag and drop
+  onDragOver?: (folderId: string) => (e: DragEvent) => void;
+  onDragLeave?: () => void;
+  onDrop?: (folderId: string) => (e: DragEvent) => void;
+  dragOverTarget?: string | null;
 }
 
 const folders: { id: MailFolder; label: string; icon: typeof Inbox }[] = [
@@ -47,13 +55,18 @@ export function MailSidebar({
   onAccountChange,
   onCompose,
   onCreateAccount,
+  onEmailSync,
+  onDragOver,
+  onDragLeave,
+  onDrop,
+  dragOverTarget,
 }: MailSidebarProps) {
   const [accountsOpen, setAccountsOpen] = useState(true);
 
   return (
     <div className="w-56 flex-shrink-0 border-r border-border bg-sidebar flex flex-col h-full">
       {/* Compose Button */}
-      <div className="p-3">
+      <div className="p-3 space-y-2">
         <Button 
           onClick={onCompose}
           className="w-full gap-2"
@@ -62,6 +75,17 @@ export function MailSidebar({
           <Plus className="h-4 w-4" />
           Compose
         </Button>
+        {onEmailSync && (
+          <Button 
+            variant="outline"
+            onClick={onEmailSync}
+            className="w-full gap-2"
+            size="sm"
+          >
+            <RefreshCw className="h-4 w-4" />
+            Sync Email
+          </Button>
+        )}
       </div>
 
       {/* Accounts */}
@@ -118,16 +142,21 @@ export function MailSidebar({
           {folders.map((folder) => {
             const count = folderCounts[folder.id];
             const isActive = selectedFolder === folder.id;
+            const isDragOver = dragOverTarget === folder.id;
             
             return (
               <button
                 key={folder.id}
                 onClick={() => onFolderChange(folder.id)}
+                onDragOver={onDragOver?.(folder.id)}
+                onDragLeave={onDragLeave}
+                onDrop={onDrop?.(folder.id)}
                 className={cn(
-                  "w-full flex items-center justify-between px-2 py-1.5 rounded-md text-sm transition-colors",
+                  "w-full flex items-center justify-between px-2 py-1.5 rounded-md text-sm transition-all",
                   isActive
                     ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                    : "text-muted-foreground hover:bg-secondary hover:text-foreground",
+                  isDragOver && "ring-2 ring-primary ring-offset-2 ring-offset-background bg-primary/20 scale-[1.02]"
                 )}
               >
                 <span className="flex items-center gap-2">
@@ -147,6 +176,13 @@ export function MailSidebar({
           })}
         </div>
       </div>
+
+      {/* Drag hint */}
+      {dragOverTarget && (
+        <div className="px-3 py-2 text-xs text-muted-foreground text-center border-t border-border animate-pulse">
+          Drop to move email
+        </div>
+      )}
     </div>
   );
 }
