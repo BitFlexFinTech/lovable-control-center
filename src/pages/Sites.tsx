@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, MoreHorizontal, ExternalLink, Settings, RefreshCw, Search, Filter } from 'lucide-react';
+import { Plus, MoreHorizontal, ExternalLink, Settings, RefreshCw, Search, Filter, Globe } from 'lucide-react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { StatusPill } from '@/components/dashboard/StatusPill';
@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useTenant } from '@/contexts/TenantContext';
 import { sites as initialSites, tenants } from '@/data/seed-data';
-import { CreateSiteDialog } from '@/components/mail/CreateSiteDialog';
+import { CreateSiteWithDomainDialog } from '@/components/mail/CreateSiteWithDomainDialog';
 import { useToast } from '@/hooks/use-toast';
 
 const Sites = () => {
@@ -55,6 +55,34 @@ const Sites = () => {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
+  const handleCreateSite = (siteData: any, emailAccounts: any[]) => {
+    // Add new site to the list
+    const newSite = {
+      id: `site-${Date.now()}`,
+      tenantId: currentTenant?.id || 'tenant-1',
+      name: siteData.name,
+      url: siteData.url,
+      status: 'active' as const,
+      dashboards: [],
+      healthCheck: {
+        lastCheck: new Date().toISOString(),
+        status: 'active' as const,
+        responseTime: 150,
+        uptime: 100,
+      },
+      lastSync: new Date().toISOString(),
+      metrics: {
+        traffic: 0,
+        trafficChange: 0,
+        orders: 0,
+        ordersChange: 0,
+      },
+      sparklineData: [0, 0, 0, 0, 0, 0, 0],
+    };
+    
+    setSites(prev => [newSite, ...prev]);
+  };
+
   return (
     <DashboardLayout>
       {/* Page Header */}
@@ -72,8 +100,8 @@ const Sites = () => {
               Health Check
             </Button>
             <Button size="sm" className="gap-1.5" onClick={() => setIsCreateSiteOpen(true)}>
-              <Plus className="h-3.5 w-3.5" />
-              Add Site
+              <Globe className="h-3.5 w-3.5" />
+              Create Site
             </Button>
           </div>
         </div>
@@ -189,15 +217,10 @@ const Sites = () => {
         </Table>
       </div>
 
-      <CreateSiteDialog
+      <CreateSiteWithDomainDialog
         isOpen={isCreateSiteOpen}
         onClose={() => setIsCreateSiteOpen(false)}
-        onCreate={(siteData, emailAccounts) => {
-          toast({
-            title: 'Site created with email accounts',
-            description: `Created: ${emailAccounts.map(a => a.email).join(', ')}`,
-          });
-        }}
+        onCreate={handleCreateSite}
         tenantId={currentTenant?.id || 'tenant-1'}
       />
     </DashboardLayout>

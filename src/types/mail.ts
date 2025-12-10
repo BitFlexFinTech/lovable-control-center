@@ -11,6 +11,12 @@ export interface EmailAccount {
   createdAt: string;
 }
 
+export interface VipSender {
+  email: string;
+  name: string;
+  addedAt: string;
+}
+
 export interface Mail {
   id: string;
   tenantId: string;
@@ -31,6 +37,7 @@ export interface Mail {
   folder: MailFolder;
   status: MailStatus;
   isStarred: boolean;
+  isFlagged?: boolean;
   hasAttachments: boolean;
   attachments?: {
     name: string;
