@@ -45,8 +45,8 @@ const App = () => (
                         <Toaster />
                         <Sonner />
                         <TourOverlay />
-                        <CommandPalette />
                         <BrowserRouter>
+                          <CommandPalette />
                           <Routes>
                             <Route path="/" element={<Index />} />
                             <Route path="/mail" element={<Mail />} />
