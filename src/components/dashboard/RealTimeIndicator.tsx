@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, forwardRef } from 'react';
 import { Wifi, WifiOff, Activity, Zap } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -63,7 +63,7 @@ interface ActivityItem {
   timestamp: string;
 }
 
-export function RealTimeActivityFeed() {
+export const RealTimeActivityFeed = forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>((props, ref) => {
   const [activities, setActivities] = useState<ActivityItem[]>([
     {
       id: '1',
@@ -136,7 +136,7 @@ export function RealTimeActivityFeed() {
   };
 
   return (
-    <div className="space-y-2">
+    <div ref={ref} className="space-y-2" {...props}>
       {activities.map((activity, index) => (
         <div
           key={activity.id}
@@ -154,7 +154,8 @@ export function RealTimeActivityFeed() {
       ))}
     </div>
   );
-}
+});
+RealTimeActivityFeed.displayName = "RealTimeActivityFeed";
 
 // Live Metrics Component
 interface LiveMetric {
