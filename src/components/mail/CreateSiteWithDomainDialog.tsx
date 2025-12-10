@@ -8,7 +8,12 @@ import {
   AlertCircle,
   DollarSign,
   ShieldCheck,
-  ExternalLink
+  ExternalLink,
+  ShoppingCart,
+  Sparkles,
+  Check,
+  X,
+  Star
 } from 'lucide-react';
 import {
   Dialog,
@@ -21,8 +26,14 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
+import { useCart } from '@/contexts/CartContext';
+import { useIntegrations } from '@/contexts/IntegrationsContext';
 import { EmailAccount } from '@/types/mail';
+import { LinkedApp } from '@/types';
+import { analyzeAppForIntegrations, POPULAR_TLDS } from '@/utils/integrationAnalyzer';
 import { cn } from '@/lib/utils';
 
 interface CreateSiteWithDomainDialogProps {
@@ -36,18 +47,23 @@ export interface NewSiteData {
   name: string;
   domain: string;
   url: string;
+  appColor?: string;
+  requiredIntegrations?: string[];
 }
 
 interface DomainCheckResult {
   available: boolean;
   domain: string;
-  price?: number;
-  premium?: boolean;
+  tld: string;
+  baseDomain: string;
+  price: number;
+  isPremium: boolean;
+  isRecommended: boolean;
 }
 
 const DEFAULT_EMAIL_ACCOUNTS = ['admin', 'accounts', 'social', 'marketing'];
 
-type Step = 'input' | 'checking' | 'available' | 'unavailable' | 'registering' | 'provisioning' | 'success' | 'error';
+type Step = 'input' | 'checking' | 'results' | 'creating' | 'analyzing' | 'success' | 'error';
 
 export function CreateSiteWithDomainDialog({ 
   isOpen, 
@@ -56,66 +72,123 @@ export function CreateSiteWithDomainDialog({
   tenantId 
 }: CreateSiteWithDomainDialogProps) {
   const { toast } = useToast();
+  const { addToCart } = useCart();
+  const { importIntegrationsForApp, getNextAppColor } = useIntegrations();
+  
   const [domain, setDomain] = useState('');
   const [step, setStep] = useState<Step>('input');
-  const [domainCheck, setDomainCheck] = useState<DomainCheckResult | null>(null);
-  const [provisioningStep, setProvisioningStep] = useState(0);
+  const [domainResults, setDomainResults] = useState<DomainCheckResult[]>([]);
+  const [selectedDomain, setSelectedDomain] = useState<DomainCheckResult | null>(null);
+  const [analyzedIntegrations, setAnalyzedIntegrations] = useState<string[]>([]);
   const [errorMessage, setErrorMessage] = useState('');
+  const [appColor, setAppColor] = useState<string>('');
 
-  // Simulated domain check (would call Namecheap API via edge function)
-  const checkDomainAvailability = async (domainName: string) => {
-    setStep('checking');
-    
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    // Simulate domain availability (for demo, .test domains are unavailable)
-    const isAvailable = !domainName.endsWith('.test') && Math.random() > 0.3;
-    const price = isAvailable ? (Math.random() > 0.8 ? 29.99 : 12.99) : undefined;
-    const isPremium = price && price > 20;
-    
-    const result: DomainCheckResult = {
-      available: isAvailable,
-      domain: domainName,
-      price,
-      premium: isPremium,
-    };
-    
-    setDomainCheck(result);
-    setStep(isAvailable ? 'available' : 'unavailable');
+  // Parse base domain (strip TLD if present)
+  const parseBaseDomain = (input: string): string => {
+    const cleaned = input.toLowerCase().replace(/[^a-z0-9.-]/g, '');
+    const parts = cleaned.split('.');
+    // If has TLD, return just the name part
+    if (parts.length > 1 && parts[parts.length - 1].length >= 2) {
+      return parts.slice(0, -1).join('.');
+    }
+    return cleaned;
   };
 
-  const registerDomainAndCreateSite = async () => {
-    if (!domainCheck?.domain) return;
+  // Check all TLDs
+  const checkDomainAvailability = async (baseDomain: string) => {
+    setStep('checking');
     
-    setStep('registering');
+    // Simulate API calls for all TLDs
+    await new Promise(resolve => setTimeout(resolve, 1500));
     
-    // Simulate domain registration
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    const results: DomainCheckResult[] = POPULAR_TLDS.map(tld => {
+      // Simulate availability (random, but .test domains are unavailable)
+      const isAvailable = !baseDomain.includes('test') && Math.random() > 0.25;
+      const priceModifier = isAvailable && Math.random() > 0.85 ? 1.5 : 1;
+      
+      return {
+        available: isAvailable,
+        domain: `${baseDomain}${tld.tld}`,
+        tld: tld.tld,
+        baseDomain,
+        price: Math.round(tld.basePrice * priceModifier * 100) / 100,
+        isPremium: tld.premium || priceModifier > 1,
+        isRecommended: tld.recommended || false,
+      };
+    });
     
-    setStep('provisioning');
+    // Sort: available first, then by recommended, then by price
+    results.sort((a, b) => {
+      if (a.available !== b.available) return a.available ? -1 : 1;
+      if (a.isRecommended !== b.isRecommended) return a.isRecommended ? -1 : 1;
+      return a.price - b.price;
+    });
     
-    // Simulate email provisioning steps
-    for (let i = 1; i <= 4; i++) {
-      setProvisioningStep(i);
-      await new Promise(resolve => setTimeout(resolve, 800));
-    }
+    setDomainResults(results);
+    setStep('results');
+  };
 
+  const handleAddToCart = (result: DomainCheckResult) => {
+    addToCart({
+      domain: result.domain,
+      tld: result.tld,
+      baseDomain: result.baseDomain,
+      price: result.price,
+      isPremium: result.isPremium,
+    });
+    setSelectedDomain(result);
+    toast({
+      title: 'Added to cart',
+      description: `${result.domain} has been added to your cart`,
+    });
+  };
+
+  const createAppAndAnalyze = async () => {
+    if (!selectedDomain) return;
+    
+    setStep('creating');
+    const color = getNextAppColor();
+    setAppColor(color);
+    
+    // Simulate app creation
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    setStep('analyzing');
+    
+    // Analyze app for integrations
+    const analysis = analyzeAppForIntegrations(selectedDomain.baseDomain, selectedDomain.domain);
+    setAnalyzedIntegrations(analysis.detectedIntegrations);
+    
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Create the app with integrations
+    const appData: LinkedApp = {
+      siteId: `site-${Date.now()}`,
+      siteName: selectedDomain.baseDomain.charAt(0).toUpperCase() + selectedDomain.baseDomain.slice(1),
+      domain: selectedDomain.domain,
+      color,
+      linkedAt: new Date().toISOString(),
+    };
+    
+    // Import integrations for this app
+    importIntegrationsForApp(analysis.detectedIntegrations, appData);
+    
     // Create email accounts
     const emailAccounts: EmailAccount[] = DEFAULT_EMAIL_ACCOUNTS.map((name, index) => ({
       id: `acc-${Date.now()}-${index}`,
       tenantId,
       name: name.charAt(0).toUpperCase() + name.slice(1),
-      email: `${name}@${domainCheck.domain}`,
+      email: `${name}@${selectedDomain.domain}`,
       type: name as EmailAccount['type'],
       createdAt: new Date().toISOString(),
     }));
 
     const newSite: NewSiteData = {
-      name: domainCheck.domain.split('.')[0].charAt(0).toUpperCase() + 
-            domainCheck.domain.split('.')[0].slice(1),
-      domain: domainCheck.domain,
-      url: `https://${domainCheck.domain}`,
+      name: appData.siteName,
+      domain: selectedDomain.domain,
+      url: `https://${selectedDomain.domain}`,
+      appColor: color,
+      requiredIntegrations: analysis.detectedIntegrations,
     };
 
     onCreate(newSite, emailAccounts);
@@ -123,22 +196,19 @@ export function CreateSiteWithDomainDialog({
     setStep('success');
     
     toast({
-      title: `Site created successfully at ${domainCheck.domain}`,
-      description: `Domain registered and ${emailAccounts.length} email accounts provisioned.`,
+      title: 'App created successfully!',
+      description: `${analysis.detectedIntegrations.length} integrations imported. Domain pending in cart.`,
     });
-
-    // Auto-close after success
-    setTimeout(() => {
-      handleClose();
-    }, 2000);
   };
 
   const handleClose = () => {
     setDomain('');
     setStep('input');
-    setDomainCheck(null);
-    setProvisioningStep(0);
+    setDomainResults([]);
+    setSelectedDomain(null);
+    setAnalyzedIntegrations([]);
     setErrorMessage('');
+    setAppColor('');
     onClose();
   };
 
@@ -152,42 +222,34 @@ export function CreateSiteWithDomainDialog({
       return;
     }
     
-    // Add .com if no TLD specified
-    const fullDomain = domain.includes('.') ? domain : `${domain}.com`;
-    checkDomainAvailability(fullDomain.toLowerCase());
+    const baseDomain = parseBaseDomain(domain);
+    checkDomainAvailability(baseDomain);
   };
-
-  const provisioningSteps = [
-    'Registering domain...',
-    'Provisioning admin@' + (domainCheck?.domain || 'domain.com'),
-    'Provisioning accounts@' + (domainCheck?.domain || 'domain.com'),
-    'Provisioning social@ & marketing@',
-  ];
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[540px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Globe className="h-5 w-5 text-primary" />
             Create Site
           </DialogTitle>
           <DialogDescription>
-            Register a domain and create a new site with automatic email provisioning
+            Search for a domain, add to cart, and create your app
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           {/* Domain Search Input */}
-          {(step === 'input' || step === 'checking' || step === 'unavailable') && (
+          {(step === 'input' || step === 'checking') && (
             <div className="space-y-2">
-              <Label htmlFor="domain">Enter your desired domain</Label>
+              <Label htmlFor="domain">Enter your desired domain name</Label>
               <div className="flex gap-2">
                 <div className="relative flex-1">
                   <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="domain"
-                    placeholder="myawesomesite.com"
+                    placeholder="myawesomesite"
                     value={domain}
                     onChange={(e) => setDomain(e.target.value.toLowerCase().replace(/[^a-z0-9.-]/g, ''))}
                     disabled={step === 'checking'}
@@ -209,117 +271,139 @@ export function CreateSiteWithDomainDialog({
               </div>
               {step === 'checking' && (
                 <p className="text-sm text-muted-foreground animate-pulse">
-                  Checking domain availability...
+                  Checking availability across all extensions...
                 </p>
               )}
             </div>
           )}
 
-          {/* Domain Unavailable */}
-          {step === 'unavailable' && domainCheck && (
-            <div className="p-4 rounded-lg bg-destructive/10 border border-destructive/20">
-              <div className="flex items-start gap-3">
-                <AlertCircle className="h-5 w-5 text-destructive mt-0.5" />
-                <div>
-                  <p className="font-medium text-destructive">Domain unavailable</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    <span className="font-mono">{domainCheck.domain}</span> is not available for registration.
-                    Try a different domain name.
-                  </p>
-                </div>
+          {/* Domain Results */}
+          {step === 'results' && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label>Available extensions for "{parseBaseDomain(domain)}"</Label>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setStep('input')}
+                  className="text-xs"
+                >
+                  Search again
+                </Button>
               </div>
-            </div>
-          )}
-
-          {/* Domain Available */}
-          {step === 'available' && domainCheck && (
-            <div className="space-y-4">
-              <div className="p-4 rounded-lg bg-primary/10 border border-primary/20">
-                <div className="flex items-start gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-primary mt-0.5" />
-                  <div className="flex-1">
-                    <p className="font-medium text-primary">Domain available!</p>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      <span className="font-mono font-semibold">{domainCheck.domain}</span> is available
-                    </p>
-                  </div>
-                  {domainCheck.price && (
-                    <div className="text-right">
-                      <div className="flex items-center gap-1 text-lg font-semibold">
-                        <DollarSign className="h-4 w-4" />
-                        {domainCheck.price}
-                      </div>
-                      <p className="text-xs text-muted-foreground">/year</p>
-                      {domainCheck.premium && (
-                        <span className="text-xs px-1.5 py-0.5 bg-yellow-500/20 text-yellow-600 rounded mt-1 inline-block">
-                          Premium
-                        </span>
+              
+              <ScrollArea className="h-[280px] pr-3">
+                <div className="space-y-2">
+                  {domainResults.map((result, index) => (
+                    <div
+                      key={result.tld}
+                      className={cn(
+                        "flex items-center justify-between p-3 rounded-lg border transition-all",
+                        result.available 
+                          ? selectedDomain?.domain === result.domain
+                            ? "bg-primary/10 border-primary"
+                            : "bg-card hover:border-primary/50"
+                          : "bg-muted/30 opacity-60",
+                        "animate-slide-up"
                       )}
+                      style={{ animationDelay: `${index * 50}ms` }}
+                    >
+                      <div className="flex items-center gap-3">
+                        {result.available ? (
+                          <Check className="h-4 w-4 text-green-500" />
+                        ) : (
+                          <X className="h-4 w-4 text-destructive" />
+                        )}
+                        <div>
+                          <p className="font-mono font-medium text-sm">
+                            {result.domain}
+                          </p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            {result.isRecommended && (
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-primary/10 text-primary border-primary/30">
+                                <Star className="h-2.5 w-2.5 mr-0.5" />
+                                Recommended
+                              </Badge>
+                            )}
+                            {result.isPremium && (
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-amber-500/10 text-amber-500 border-amber-500/30">
+                                Premium
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-3">
+                        {result.available ? (
+                          <>
+                            <div className="text-right">
+                              <p className="font-semibold">${result.price.toFixed(2)}</p>
+                              <p className="text-[10px] text-muted-foreground">/year</p>
+                            </div>
+                            {selectedDomain?.domain === result.domain ? (
+                              <Badge variant="active" className="gap-1">
+                                <Check className="h-3 w-3" />
+                                Selected
+                              </Badge>
+                            ) : (
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => handleAddToCart(result)}
+                                className="gap-1.5"
+                              >
+                                <ShoppingCart className="h-3.5 w-3.5" />
+                                Add
+                              </Button>
+                            )}
+                          </>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">Unavailable</span>
+                        )}
+                      </div>
                     </div>
-                  )}
+                  ))}
                 </div>
-              </div>
-
-              {/* What's included */}
-              <div className="space-y-2">
-                <p className="text-sm font-medium">What's included:</p>
-                <div className="grid gap-2 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-2">
-                    <ShieldCheck className="h-4 w-4 text-primary" />
-                    <span>Domain registration with WHOIS privacy</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Mail className="h-4 w-4 text-primary" />
-                    <span>4 email accounts (admin, accounts, social, marketing)</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <ExternalLink className="h-4 w-4 text-primary" />
-                    <span>New Lovable project bound to this domain</span>
-                  </div>
-                </div>
-              </div>
+              </ScrollArea>
             </div>
           )}
 
-          {/* Registering/Provisioning */}
-          {(step === 'registering' || step === 'provisioning') && (
+          {/* Creating/Analyzing */}
+          {(step === 'creating' || step === 'analyzing') && (
             <div className="space-y-4">
               <div className="flex items-center gap-3 p-4 rounded-lg bg-muted/50">
                 <Loader2 className="h-5 w-5 animate-spin text-primary" />
                 <div>
                   <p className="font-medium">
-                    {step === 'registering' ? 'Registering domain...' : 'Provisioning site...'}
+                    {step === 'creating' ? 'Creating Lovable app...' : 'Analyzing integrations...'}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    {step === 'registering' 
-                      ? `Registering ${domainCheck?.domain} via Namecheap`
-                      : provisioningSteps[provisioningStep - 1] || 'Finishing up...'}
+                    {step === 'creating' 
+                      ? `Setting up ${selectedDomain?.domain}`
+                      : 'Detecting required third-party platforms'}
                   </p>
                 </div>
               </div>
 
-              {step === 'provisioning' && (
-                <div className="grid grid-cols-2 gap-2">
-                  {DEFAULT_EMAIL_ACCOUNTS.map((account, index) => (
-                    <div
-                      key={account}
-                      className={cn(
-                        "flex items-center gap-2 text-sm p-2 rounded-md transition-all",
-                        provisioningStep > index
-                          ? 'bg-primary/10 text-primary'
-                          : 'text-muted-foreground'
-                      )}
-                    >
-                      {provisioningStep > index ? (
-                        <CheckCircle2 className="h-3.5 w-3.5" />
-                      ) : provisioningStep === index + 1 ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        <Mail className="h-3.5 w-3.5" />
-                      )}
-                      <span>{account}@{domainCheck?.domain}</span>
-                    </div>
-                  ))}
+              {step === 'analyzing' && (
+                <div className="p-4 rounded-lg bg-secondary/30 border border-border">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Sparkles className="h-4 w-4 text-primary" />
+                    <p className="text-sm font-medium">Auto-importing integrations...</p>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {analyzedIntegrations.map((id, i) => (
+                      <Badge 
+                        key={id} 
+                        variant="outline"
+                        className="animate-scale-in"
+                        style={{ animationDelay: `${i * 100}ms` }}
+                      >
+                        {id}
+                      </Badge>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -327,12 +411,29 @@ export function CreateSiteWithDomainDialog({
 
           {/* Success */}
           {step === 'success' && (
-            <div className="p-4 rounded-lg bg-primary/10 border border-primary/20 text-center">
-              <CheckCircle2 className="h-12 w-12 text-primary mx-auto mb-3" />
-              <p className="font-medium text-lg">Site created successfully!</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                Your site at <span className="font-mono">{domainCheck?.domain}</span> is ready
-              </p>
+            <div className="space-y-4">
+              <div className="p-4 rounded-lg bg-primary/10 border border-primary/20 text-center">
+                <CheckCircle2 className="h-12 w-12 text-primary mx-auto mb-3" />
+                <p className="font-medium text-lg">App created successfully!</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  <span className="font-mono">{selectedDomain?.domain}</span> is ready
+                </p>
+              </div>
+              
+              <div className="grid gap-3 text-sm">
+                <div className="flex items-center gap-2 p-2 rounded-md bg-muted/50">
+                  <ShoppingCart className="h-4 w-4 text-primary" />
+                  <span>Domain added to cart (pending purchase)</span>
+                </div>
+                <div className="flex items-center gap-2 p-2 rounded-md bg-muted/50">
+                  <Mail className="h-4 w-4 text-primary" />
+                  <span>4 email accounts provisioned</span>
+                </div>
+                <div className="flex items-center gap-2 p-2 rounded-md bg-muted/50">
+                  <Sparkles className="h-4 w-4 text-primary" />
+                  <span>{analyzedIntegrations.length} integrations auto-imported</span>
+                </div>
+              </div>
             </div>
           )}
 
@@ -342,9 +443,9 @@ export function CreateSiteWithDomainDialog({
               <div className="flex items-start gap-3">
                 <AlertCircle className="h-5 w-5 text-destructive mt-0.5" />
                 <div>
-                  <p className="font-medium text-destructive">Registration failed</p>
+                  <p className="font-medium text-destructive">Creation failed</p>
                   <p className="text-sm text-muted-foreground mt-1">
-                    {errorMessage || 'An error occurred during registration. Please try again.'}
+                    {errorMessage || 'An error occurred. Please try again.'}
                   </p>
                 </div>
               </div>
@@ -357,15 +458,20 @@ export function CreateSiteWithDomainDialog({
             <Button 
               variant="ghost" 
               onClick={handleClose} 
-              disabled={step === 'registering' || step === 'provisioning'}
+              disabled={step === 'creating' || step === 'analyzing'}
             >
               Cancel
             </Button>
           )}
-          {step === 'available' && (
-            <Button onClick={registerDomainAndCreateSite}>
+          {step === 'results' && selectedDomain && (
+            <Button onClick={createAppAndAnalyze}>
               <Globe className="h-4 w-4 mr-2" />
-              Register & Create Site
+              Create App
+            </Button>
+          )}
+          {step === 'success' && (
+            <Button onClick={handleClose}>
+              Done
             </Button>
           )}
           {step === 'error' && (

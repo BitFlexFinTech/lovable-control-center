@@ -4,6 +4,39 @@ export type SiteStatus = 'active' | 'warning' | 'inactive';
 
 export type UserRole = 'owner' | 'admin' | 'editor';
 
+// Cart item for domain checkout
+export interface CartItem {
+  id: string;
+  domain: string;
+  tld: string;
+  baseDomain: string;
+  price: number;
+  isPremium: boolean;
+  addedAt: string;
+}
+
+// Linked app with color coding
+export interface LinkedApp {
+  siteId: string;
+  siteName: string;
+  domain: string;
+  color: string;
+  linkedAt: string;
+}
+
+// Integration with multi-app support
+export interface Integration {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  category: 'Payments' | 'Social' | 'Analytics' | 'Email' | 'Development' | 'Communication' | 'Storage' | 'Auth';
+  status: 'active' | 'imported' | 'pending' | 'error';
+  linkedApps: LinkedApp[];
+  configuredAt?: string;
+  lastSync?: string;
+}
+
 export interface Tenant {
   id: string;
   name: string;
@@ -50,6 +83,11 @@ export interface Site {
     ordersChange: number;
   };
   sparklineData: number[];
+  // New fields for domain and integrations
+  domain?: string;
+  domainStatus?: 'pending' | 'purchased' | 'active';
+  requiredIntegrations?: string[];
+  appColor?: string;
 }
 
 export interface User {
