@@ -20,7 +20,6 @@ import { cn } from '@/lib/utils';
 const mainNavItems = [
   { icon: LayoutDashboard, label: 'Overview', path: '/', tourId: 'nav-overview' },
   { icon: Mail, label: 'Mail', path: '/mail', tourId: 'nav-mail' },
-  { icon: Share2, label: 'Social Prefill', path: '/social-prefill', tourId: 'nav-social-prefill' },
   { icon: KeyRound, label: 'Password Manager', path: '/passwords', tourId: 'nav-passwords' },
   { icon: Building2, label: 'Tenants', path: '/tenants', tourId: 'nav-tenants' },
   { icon: Globe, label: 'Sites', path: '/sites', tourId: 'nav-sites' },
@@ -30,6 +29,7 @@ const mainNavItems = [
 const configNavItems = [
   { icon: Shield, label: 'Roles', path: '/roles', tourId: 'nav-roles' },
   { icon: Plug, label: 'Integrations', path: '/integrations', tourId: 'nav-integrations' },
+  { icon: Share2, label: 'Social Prefill', path: '/social-prefill', tourId: 'nav-social-prefill' },
   { icon: ScrollText, label: 'Audit Logs', path: '/audit-logs', tourId: 'nav-audit-logs' },
   { icon: Sparkles, label: 'Guided Tour', path: '/guided-tour', tourId: 'nav-guided-tour' },
 ];
