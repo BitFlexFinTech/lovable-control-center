@@ -59,6 +59,9 @@ export const sites: Site[] = [
       ordersChange: 8.3,
     },
     sparklineData: [20, 25, 22, 30, 28, 35, 32, 40, 38, 45, 42, 48],
+    demoMode: { isDemo: true, isLive: false, activatedAt: '2024-12-01T10:00:00Z' },
+    integrationCount: 5,
+    domain: 'acme-store.com',
   },
   {
     id: 'site-2',
@@ -85,6 +88,9 @@ export const sites: Site[] = [
       ordersChange: 0,
     },
     sparklineData: [15, 18, 16, 20, 19, 22, 21, 25, 24, 28, 26, 30],
+    demoMode: { isDemo: false, isLive: true, goLiveAt: '2024-11-15T14:00:00Z' },
+    integrationCount: 3,
+    domain: 'docs.acme.io',
   },
   {
     id: 'site-3',
@@ -111,6 +117,9 @@ export const sites: Site[] = [
       ordersChange: 0,
     },
     sparklineData: [25, 22, 24, 20, 18, 22, 19, 17, 20, 18, 16, 15],
+    demoMode: { isDemo: true, isLive: false, activatedAt: '2024-12-05T08:00:00Z' },
+    integrationCount: 4,
+    domain: 'techstart-blog.com',
   },
 ];
 
