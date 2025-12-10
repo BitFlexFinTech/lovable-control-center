@@ -8,13 +8,17 @@ import {
   ScrollText,
   Settings,
   HelpCircle,
-  Zap
+  Zap,
+  Mail,
+  Share2
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { cn } from '@/lib/utils';
 
 const mainNavItems = [
   { icon: LayoutDashboard, label: 'Overview', path: '/' },
+  { icon: Mail, label: 'Mail', path: '/mail' },
+  { icon: Share2, label: 'Social Prefill', path: '/social-prefill' },
   { icon: Building2, label: 'Tenants', path: '/tenants' },
   { icon: Globe, label: 'Sites', path: '/sites' },
   { icon: Users, label: 'Users', path: '/users' },

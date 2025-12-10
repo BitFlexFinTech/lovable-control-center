@@ -12,6 +12,8 @@ import Roles from "./pages/Roles";
 import Integrations from "./pages/Integrations";
 import AuditLogs from "./pages/AuditLogs";
 import Settings from "./pages/Settings";
+import Mail from "./pages/Mail";
+import SocialPrefill from "./pages/SocialPrefill";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -25,6 +27,8 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/mail" element={<Mail />} />
+            <Route path="/social-prefill" element={<SocialPrefill />} />
             <Route path="/tenants" element={<Tenants />} />
             <Route path="/sites" element={<Sites />} />
             <Route path="/users" element={<Users />} />
