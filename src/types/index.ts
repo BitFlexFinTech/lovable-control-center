@@ -1,8 +1,13 @@
+import { SiteOwnerType, SubscriptionTier, BillingInfo, PaymentHistoryItem } from './billing';
+
 export type Environment = 'production' | 'staging' | 'development';
 
 export type SiteStatus = 'active' | 'warning' | 'inactive';
 
 export type UserRole = 'owner' | 'admin' | 'editor';
+
+// Re-export billing types
+export type { SiteOwnerType, SubscriptionTier, BillingInfo, PaymentHistoryItem };
 
 // Cart item for domain checkout
 export interface CartItem {
@@ -113,6 +118,13 @@ export interface Site {
   // Demo mode fields
   demoMode?: DemoMode;
   integrationCount?: number;
+  // Owner and billing fields
+  ownerType?: SiteOwnerType;
+  ownerId?: string;
+  ownerName?: string;
+  ownerEmail?: string;
+  billing?: BillingInfo;
+  paymentHistory?: PaymentHistoryItem[];
 }
 
 export type UserSource = 'control-center' | 'app';
