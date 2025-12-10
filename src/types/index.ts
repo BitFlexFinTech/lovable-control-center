@@ -24,13 +24,28 @@ export interface LinkedApp {
   linkedAt: string;
 }
 
+// Integration categories including new ones for Control Center
+export type IntegrationCategory = 
+  | 'Payments' 
+  | 'Social' 
+  | 'Analytics' 
+  | 'Email' 
+  | 'Development' 
+  | 'Communication' 
+  | 'Storage' 
+  | 'Auth'
+  | 'Domain'
+  | 'Database'
+  | 'Hosting'
+  | 'Infrastructure';
+
 // Integration with multi-app support
 export interface Integration {
   id: string;
   name: string;
   description: string;
   icon: string;
-  category: 'Payments' | 'Social' | 'Analytics' | 'Email' | 'Development' | 'Communication' | 'Storage' | 'Auth';
+  category: IntegrationCategory;
   status: 'active' | 'imported' | 'pending' | 'error';
   linkedApps: LinkedApp[];
   configuredAt?: string;
