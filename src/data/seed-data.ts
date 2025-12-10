@@ -33,6 +33,7 @@ export const tenants: Tenant[] = [
 ];
 
 export const sites: Site[] = [
+  // Admin-created sites
   {
     id: 'site-1',
     tenantId: 'tenant-1',
@@ -63,6 +64,10 @@ export const sites: Site[] = [
     integrationCount: 5,
     domain: 'acme-store.com',
     appColor: '#3B82F6',
+    ownerType: 'admin',
+    ownerId: 'user-1',
+    ownerName: 'Alex Morgan',
+    ownerEmail: 'admin@controlcenter.io',
   },
   {
     id: 'site-2',
@@ -93,7 +98,12 @@ export const sites: Site[] = [
     integrationCount: 3,
     domain: 'docs.acme.io',
     appColor: '#8B5CF6',
+    ownerType: 'admin',
+    ownerId: 'user-1',
+    ownerName: 'Alex Morgan',
+    ownerEmail: 'admin@controlcenter.io',
   },
+  // Customer-created sites
   {
     id: 'site-3',
     tenantId: 'tenant-2',
@@ -123,6 +133,106 @@ export const sites: Site[] = [
     integrationCount: 4,
     domain: 'techstart-blog.com',
     appColor: '#10B981',
+    ownerType: 'customer',
+    ownerId: 'cust-1',
+    ownerName: 'John Smith',
+    ownerEmail: 'john@company.com',
+    billing: {
+      subscriptionTier: 'pro',
+      status: 'active',
+      currentPeriodStart: '2024-12-01T00:00:00Z',
+      currentPeriodEnd: '2025-01-01T00:00:00Z',
+      monthlyPrice: 79,
+      paymentMethod: { type: 'card', last4: '4242', brand: 'Visa' },
+    },
+    paymentHistory: [
+      { id: 'pay-1', date: '2024-12-01T00:00:00Z', amount: 79, status: 'paid', description: 'Pro Plan - December' },
+      { id: 'pay-2', date: '2024-11-01T00:00:00Z', amount: 79, status: 'paid', description: 'Pro Plan - November' },
+    ],
+  },
+  {
+    id: 'site-4',
+    tenantId: 'tenant-1',
+    name: 'Fashion Boutique',
+    url: 'https://fashion-boutique.lovable.app',
+    status: 'active',
+    dashboards: [
+      { id: 'd1', name: 'Overview', route: '/admin', icon: 'LayoutDashboard' },
+      { id: 'd2', name: 'Products', route: '/admin/products', icon: 'Package' },
+    ],
+    healthCheck: {
+      lastCheck: '2024-12-10T12:00:00Z',
+      status: 'active',
+      responseTime: 120,
+      uptime: 99.95,
+    },
+    lastSync: '2024-12-10T11:45:00Z',
+    metrics: {
+      traffic: 15200,
+      trafficChange: 18.2,
+      orders: 189,
+      ordersChange: 12.5,
+    },
+    sparklineData: [30, 35, 32, 40, 38, 45, 42, 50, 48, 55, 52, 58],
+    demoMode: { isDemo: false, isLive: true, goLiveAt: '2024-10-20T14:00:00Z' },
+    integrationCount: 6,
+    domain: 'fashion-boutique.com',
+    appColor: '#EC4899',
+    ownerType: 'customer',
+    ownerId: 'cust-2',
+    ownerName: 'Sarah Johnson',
+    ownerEmail: 'sarah@startup.io',
+    billing: {
+      subscriptionTier: 'enterprise',
+      status: 'active',
+      currentPeriodStart: '2024-12-01T00:00:00Z',
+      currentPeriodEnd: '2025-01-01T00:00:00Z',
+      monthlyPrice: 199,
+      paymentMethod: { type: 'card', last4: '8888', brand: 'Mastercard' },
+    },
+    paymentHistory: [
+      { id: 'pay-3', date: '2024-12-01T00:00:00Z', amount: 199, status: 'paid', description: 'Enterprise Plan - December' },
+    ],
+  },
+  {
+    id: 'site-5',
+    tenantId: 'tenant-2',
+    name: 'Creative Agency',
+    url: 'https://creative-agency.lovable.app',
+    status: 'active',
+    dashboards: [
+      { id: 'd1', name: 'Overview', route: '/admin', icon: 'LayoutDashboard' },
+    ],
+    healthCheck: {
+      lastCheck: '2024-12-10T12:00:00Z',
+      status: 'active',
+      responseTime: 95,
+      uptime: 99.99,
+    },
+    lastSync: '2024-12-10T11:40:00Z',
+    metrics: {
+      traffic: 3200,
+      trafficChange: 5.5,
+      orders: 0,
+      ordersChange: 0,
+    },
+    sparklineData: [10, 12, 11, 15, 14, 18, 16, 20, 19, 22, 21, 25],
+    demoMode: { isDemo: true, isLive: false, activatedAt: '2024-12-08T10:00:00Z' },
+    integrationCount: 2,
+    domain: 'creative-agency.io',
+    appColor: '#F59E0B',
+    ownerType: 'customer',
+    ownerId: 'cust-3',
+    ownerName: 'Mike Wilson',
+    ownerEmail: 'mike@agency.co',
+    billing: {
+      subscriptionTier: 'starter',
+      status: 'trialing',
+      currentPeriodStart: '2024-12-08T00:00:00Z',
+      currentPeriodEnd: '2024-12-22T00:00:00Z',
+      monthlyPrice: 29,
+    },
+    paymentHistory: [],
   },
 ];
 
