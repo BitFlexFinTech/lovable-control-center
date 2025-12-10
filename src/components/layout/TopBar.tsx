@@ -3,6 +3,7 @@ import { TenantSwitcher } from '@/components/TenantSwitcher';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { CartDrawer } from '@/components/cart/CartDrawer';
 import { NotificationCenter } from '@/components/monitoring/NotificationCenter';
+import { ThemeToggle } from '@/components/layout/ThemeToggle';
 import { users } from '@/data/seed-data';
 
 export function TopBar() {
@@ -29,8 +30,10 @@ export function TopBar() {
           </div>
         </div>
 
-        {/* Right side - Cart, Notifications & Profile */}
+        {/* Right side - Theme, Cart, Notifications & Profile */}
         <div className="flex items-center gap-3">
+          <ThemeToggle />
+          
           <CartDrawer />
           
           <NotificationCenter />

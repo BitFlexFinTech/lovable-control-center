@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { RefreshCw, Plus, Sparkles, Activity, Wifi } from 'lucide-react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { SiteAnalyticsCard } from '@/components/dashboard/SiteAnalyticsCard';
@@ -17,6 +17,14 @@ import {
   RealTimeActivityFeed, 
   LiveMetrics 
 } from '@/components/dashboard/RealTimeIndicator';
+import {
+  SiteAnalyticsCardSkeleton,
+  MonitoringWidgetSkeleton,
+  ProductionReadinessSkeleton,
+  ActivityFeedSkeleton,
+  PreLaunchChecklistSkeleton,
+  AISummarySkeleton,
+} from '@/components/dashboard/DashboardSkeletons';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -35,6 +43,13 @@ const Index = () => {
   const [suggestions, setSuggestions] = useState<AISuggestion[]>(() => generateAISuggestions(sites));
   const [previewSuggestion, setPreviewSuggestion] = useState<AISuggestion | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Simulate initial data loading
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 1200);
+    return () => clearTimeout(timer);
+  }, []);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const filteredSites = currentTenant
@@ -136,87 +151,114 @@ const Index = () => {
 
       {/* Pre-Launch Checklist */}
       <div className="mb-6">
-        <PreLaunchChecklist />
+        {isLoading ? <PreLaunchChecklistSkeleton /> : <PreLaunchChecklist />}
       </div>
 
       {/* Monitoring Widgets Row */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <HealthStatusWidget />
-        <SSLStatusWidget />
-        <EmailStatsWidget />
-        <BackupStatusWidget />
+        {isLoading ? (
+          <>
+            <MonitoringWidgetSkeleton />
+            <MonitoringWidgetSkeleton />
+            <MonitoringWidgetSkeleton />
+            <MonitoringWidgetSkeleton />
+          </>
+        ) : (
+          <>
+            <HealthStatusWidget />
+            <SSLStatusWidget />
+            <EmailStatsWidget />
+            <BackupStatusWidget />
+          </>
+        )}
       </div>
 
       {/* Production Readiness + Live Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
-        <ProductionReadiness />
-        
-        {/* Live Metrics Card */}
-        <Card className="opacity-0 animate-fade-in" style={{ animationDelay: '100ms' }}>
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Activity className="h-4 w-4 text-primary" />
-                <CardTitle className="text-sm font-medium">Live Metrics</CardTitle>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <Wifi className="h-3 w-3 text-status-active animate-pulse" />
-                <span className="text-xs text-status-active">Live</span>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <LiveMetrics />
-          </CardContent>
-        </Card>
+        {isLoading ? (
+          <>
+            <ProductionReadinessSkeleton />
+            <ActivityFeedSkeleton />
+            <ActivityFeedSkeleton />
+          </>
+        ) : (
+          <>
+            <ProductionReadiness />
+            
+            {/* Live Metrics Card */}
+            <Card className="opacity-0 animate-fade-in" style={{ animationDelay: '100ms' }}>
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Activity className="h-4 w-4 text-primary" />
+                    <CardTitle className="text-sm font-medium">Live Metrics</CardTitle>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Wifi className="h-3 w-3 text-status-active animate-pulse" />
+                    <span className="text-xs text-status-active">Live</span>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <LiveMetrics />
+              </CardContent>
+            </Card>
 
-        {/* Activity Feed Card */}
-        <Card className="opacity-0 animate-fade-in" style={{ animationDelay: '150ms' }}>
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium">Recent Activity</CardTitle>
-              <Badge variant="secondary" className="text-xs">Auto-updating</Badge>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <RealTimeActivityFeed />
-          </CardContent>
-        </Card>
+            {/* Activity Feed Card */}
+            <Card className="opacity-0 animate-fade-in" style={{ animationDelay: '150ms' }}>
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm font-medium">Recent Activity</CardTitle>
+                  <Badge variant="secondary" className="text-xs">Auto-updating</Badge>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <RealTimeActivityFeed />
+              </CardContent>
+            </Card>
+          </>
+        )}
       </div>
 
       {/* AI Analysis Summary */}
-      <div className="rounded-xl border bg-card p-5 mb-8 opacity-0 animate-fade-in" style={{ animationDelay: '200ms' }}>
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-primary" />
-            <h3 className="font-semibold">AI Analysis Summary</h3>
-          </div>
-          <Badge variant="secondary">{pendingSuggestions.length} suggestions</Badge>
+      {isLoading ? (
+        <div className="mb-8">
+          <AISummarySkeleton />
         </div>
-        <p className="text-sm text-muted-foreground mb-4">
-          As a senior prompt engineer, I've analyzed your sites and identified {pendingSuggestions.length} improvement opportunities across performance, security, and SEO.
-        </p>
-        <div className="grid grid-cols-3 gap-4">
-          <div className="text-center p-3 rounded-lg bg-status-inactive/10">
-            <span className="text-2xl font-bold text-status-inactive">
-              {pendingSuggestions.filter(s => s.priority === 'high').length}
-            </span>
-            <p className="text-xs text-muted-foreground mt-1">High Priority</p>
+      ) : (
+        <div className="rounded-xl border bg-card p-5 mb-8 opacity-0 animate-fade-in" style={{ animationDelay: '200ms' }}>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              <h3 className="font-semibold">AI Analysis Summary</h3>
+            </div>
+            <Badge variant="secondary">{pendingSuggestions.length} suggestions</Badge>
           </div>
-          <div className="text-center p-3 rounded-lg bg-status-warning/10">
-            <span className="text-2xl font-bold text-status-warning">
-              {pendingSuggestions.filter(s => s.priority === 'medium').length}
-            </span>
-            <p className="text-xs text-muted-foreground mt-1">Medium Priority</p>
-          </div>
-          <div className="text-center p-3 rounded-lg bg-primary/10">
-            <span className="text-2xl font-bold text-primary">
-              {pendingSuggestions.filter(s => s.priority === 'low').length}
-            </span>
-            <p className="text-xs text-muted-foreground mt-1">Low Priority</p>
+          <p className="text-sm text-muted-foreground mb-4">
+            As a senior prompt engineer, I've analyzed your sites and identified {pendingSuggestions.length} improvement opportunities across performance, security, and SEO.
+          </p>
+          <div className="grid grid-cols-3 gap-4">
+            <div className="text-center p-3 rounded-lg bg-status-inactive/10">
+              <span className="text-2xl font-bold text-status-inactive">
+                {pendingSuggestions.filter(s => s.priority === 'high').length}
+              </span>
+              <p className="text-xs text-muted-foreground mt-1">High Priority</p>
+            </div>
+            <div className="text-center p-3 rounded-lg bg-status-warning/10">
+              <span className="text-2xl font-bold text-status-warning">
+                {pendingSuggestions.filter(s => s.priority === 'medium').length}
+              </span>
+              <p className="text-xs text-muted-foreground mt-1">Medium Priority</p>
+            </div>
+            <div className="text-center p-3 rounded-lg bg-primary/10">
+              <span className="text-2xl font-bold text-primary">
+                {pendingSuggestions.filter(s => s.priority === 'low').length}
+              </span>
+              <p className="text-xs text-muted-foreground mt-1">Low Priority</p>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Sites Section Header */}
       <div className="flex items-center gap-3 mb-4 opacity-0 animate-fade-in" style={{ animationDelay: '250ms' }}>
@@ -230,15 +272,23 @@ const Index = () => {
 
       {/* Site Analytics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mb-8">
-        {filteredSites.map((site, index) => (
-          <SiteAnalyticsCard 
-            key={site.id} 
-            site={site} 
-            suggestions={getSiteSuggestions(site.id)}
-            onViewSuggestions={handleViewSiteSuggestions}
-            delay={300 + index * 50} 
-          />
-        ))}
+        {isLoading ? (
+          <>
+            <SiteAnalyticsCardSkeleton />
+            <SiteAnalyticsCardSkeleton />
+            <SiteAnalyticsCardSkeleton />
+          </>
+        ) : (
+          filteredSites.map((site, index) => (
+            <SiteAnalyticsCard 
+              key={site.id} 
+              site={site} 
+              suggestions={getSiteSuggestions(site.id)}
+              onViewSuggestions={handleViewSiteSuggestions}
+              delay={300 + index * 50} 
+            />
+          ))
+        )}
       </div>
 
       {filteredSites.length === 0 && (
