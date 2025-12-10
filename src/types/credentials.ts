@@ -33,13 +33,28 @@ export interface DemoMode {
   goLiveAt?: string;
 }
 
+// Integration categories including new ones for Control Center
+export type IntegrationCategory = 
+  | 'Payments' 
+  | 'Social' 
+  | 'Analytics' 
+  | 'Email' 
+  | 'Development' 
+  | 'Communication' 
+  | 'Storage' 
+  | 'Auth'
+  | 'Domain'
+  | 'Database'
+  | 'Hosting'
+  | 'Infrastructure';
+
 // Integration template for all integrations
 export interface IntegrationTemplate {
   id: string;
   name: string;
   icon: string;
   color: string;
-  category: 'Payments' | 'Social' | 'Analytics' | 'Email' | 'Development' | 'Communication' | 'Storage' | 'Auth';
+  category: IntegrationCategory;
   fields: {
     key: string;
     label: string;
@@ -49,7 +64,63 @@ export interface IntegrationTemplate {
 
 // All integration templates
 export const integrationTemplates: IntegrationTemplate[] = [
-  // Payments
+  // ============= DOMAIN =============
+  {
+    id: 'namecheap',
+    name: 'Namecheap',
+    icon: '🌐',
+    color: 'from-orange-500 to-red-600',
+    category: 'Domain',
+    fields: [
+      { key: 'email', label: 'Email', required: true },
+      { key: 'password', label: 'Password', required: true },
+      { key: 'apiUser', label: 'API User', required: true },
+      { key: 'apiKey', label: 'API Key', required: true },
+      { key: 'username', label: 'Namecheap Username', required: true },
+      { key: 'clientIp', label: 'Whitelisted IP', required: true },
+    ],
+  },
+  // ============= DATABASE =============
+  {
+    id: 'supabase',
+    name: 'Supabase',
+    icon: '⚡',
+    color: 'from-emerald-500 to-green-600',
+    category: 'Database',
+    fields: [
+      { key: 'email', label: 'Email', required: true },
+      { key: 'password', label: 'Password', required: true },
+      { key: 'projectUrl', label: 'Project URL', required: true },
+      { key: 'anonKey', label: 'Anon Key', required: true },
+      { key: 'serviceKey', label: 'Service Role Key', required: true },
+    ],
+  },
+  // ============= HOSTING =============
+  {
+    id: 'lovable-cloud',
+    name: 'Lovable Cloud',
+    icon: '💜',
+    color: 'from-purple-500 to-pink-500',
+    category: 'Hosting',
+    fields: [
+      { key: 'email', label: 'Email', required: true },
+      { key: 'apiKey', label: 'API Key', required: true },
+      { key: 'projectId', label: 'Project ID', required: true },
+    ],
+  },
+  // ============= INFRASTRUCTURE =============
+  {
+    id: 'letsencrypt',
+    name: "Let's Encrypt",
+    icon: '🔒',
+    color: 'from-yellow-500 to-orange-500',
+    category: 'Infrastructure',
+    fields: [
+      { key: 'email', label: 'Contact Email', required: true },
+      { key: 'domain', label: 'Domain', required: true },
+    ],
+  },
+  // ============= PAYMENTS =============
   {
     id: 'stripe',
     name: 'Stripe',
@@ -77,7 +148,7 @@ export const integrationTemplates: IntegrationTemplate[] = [
       { key: 'phone', label: 'Phone', required: true },
     ],
   },
-  // Email Services
+  // ============= EMAIL SERVICES =============
   {
     id: 'sendgrid',
     name: 'SendGrid',
@@ -89,6 +160,30 @@ export const integrationTemplates: IntegrationTemplate[] = [
       { key: 'password', label: 'Password', required: true },
       { key: 'companyName', label: 'Company Name', required: true },
       { key: 'website', label: 'Website', required: true },
+    ],
+  },
+  {
+    id: 'gmail-api',
+    name: 'Gmail API',
+    icon: '📧',
+    color: 'from-red-500 to-orange-500',
+    category: 'Email',
+    fields: [
+      { key: 'clientId', label: 'OAuth Client ID', required: true },
+      { key: 'clientSecret', label: 'OAuth Client Secret', required: true },
+      { key: 'redirectUri', label: 'Redirect URI', required: true },
+    ],
+  },
+  {
+    id: 'microsoft-graph',
+    name: 'Microsoft Graph',
+    icon: '📬',
+    color: 'from-blue-500 to-cyan-600',
+    category: 'Email',
+    fields: [
+      { key: 'clientId', label: 'App Client ID', required: true },
+      { key: 'clientSecret', label: 'Client Secret', required: true },
+      { key: 'tenantId', label: 'Tenant ID', required: true },
     ],
   },
   {
@@ -106,7 +201,7 @@ export const integrationTemplates: IntegrationTemplate[] = [
   {
     id: 'mailchimp',
     name: 'Mailchimp',
-    icon: '📧',
+    icon: '🐵',
     color: 'from-yellow-500 to-yellow-600',
     category: 'Email',
     fields: [
@@ -115,7 +210,7 @@ export const integrationTemplates: IntegrationTemplate[] = [
       { key: 'companyName', label: 'Company Name', required: true },
     ],
   },
-  // Analytics
+  // ============= ANALYTICS =============
   {
     id: 'google-analytics',
     name: 'Google Analytics',
@@ -140,7 +235,7 @@ export const integrationTemplates: IntegrationTemplate[] = [
       { key: 'projectName', label: 'Project Name', required: true },
     ],
   },
-  // Auth
+  // ============= AUTH =============
   {
     id: 'auth0',
     name: 'Auth0',
@@ -154,7 +249,7 @@ export const integrationTemplates: IntegrationTemplate[] = [
       { key: 'domain', label: 'Auth0 Domain', required: true },
     ],
   },
-  // Storage
+  // ============= STORAGE =============
   {
     id: 'aws-s3',
     name: 'AWS S3',
@@ -180,7 +275,7 @@ export const integrationTemplates: IntegrationTemplate[] = [
       { key: 'cloudName', label: 'Cloud Name', required: true },
     ],
   },
-  // Development
+  // ============= DEVELOPMENT =============
   {
     id: 'github',
     name: 'GitHub',
@@ -205,7 +300,7 @@ export const integrationTemplates: IntegrationTemplate[] = [
       { key: 'teamName', label: 'Team Name', required: false },
     ],
   },
-  // Communication
+  // ============= COMMUNICATION =============
   {
     id: 'slack',
     name: 'Slack',
@@ -231,7 +326,7 @@ export const integrationTemplates: IntegrationTemplate[] = [
       { key: 'serverName', label: 'Server Name', required: false },
     ],
   },
-  // Social
+  // ============= SOCIAL =============
   {
     id: 'instagram',
     name: 'Instagram',
@@ -308,14 +403,31 @@ export const integrationTemplates: IntegrationTemplate[] = [
   },
 ];
 
-// Control Center required integrations
+// Control Center required integrations - expanded list based on codebase analysis
 export const CONTROL_CENTER_INTEGRATIONS = [
-  'auth0',
-  'sendgrid',
-  'google-analytics',
-  'aws-s3',
-  'slack',
-  'github',
+  // Critical - Required for operation
+  'auth0',           // Admin authentication
+  'supabase',        // Database & real-time
+  'namecheap',       // Domain registration
+  'letsencrypt',     // SSL certificates
+  
+  // Email Infrastructure
+  'sendgrid',        // Transactional email
+  'gmail-api',       // Email sync (Gmail)
+  'microsoft-graph', // Email sync (Outlook)
+  
+  // Monitoring & Analytics
+  'google-analytics', // Usage tracking
+  
+  // Storage & Files
+  'aws-s3',          // File storage & backups
+  
+  // Development & Deployment
+  'github',          // Version control
+  'lovable-cloud',   // Hosting platform
+  
+  // Communication
+  'slack',           // Admin alerts & notifications
 ];
 
 export const CONTROL_CENTER_APP = {

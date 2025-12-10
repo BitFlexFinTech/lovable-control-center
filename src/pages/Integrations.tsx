@@ -23,8 +23,17 @@ const Integrations = () => {
   const [ccSectionOpen, setCcSectionOpen] = useState(true);
   const [sitesSectionOpen, setSitesSectionOpen] = useState(true);
 
-  // Get unique categories
-  const categories = [...new Set(integrations.map(i => i.category))];
+  // All available categories including new ones for Control Center
+  const allCategories = [
+    'Domain', 'Database', 'Hosting', 'Infrastructure',
+    'Payments', 'Email', 'Analytics', 'Auth', 
+    'Storage', 'Development', 'Communication', 'Social'
+  ];
+  
+  // Get categories that have integrations
+  const categories = allCategories.filter(cat => 
+    integrations.some(i => i.category === cat)
+  );
 
   // Filter integrations
   const filteredIntegrations = integrations.filter(integration => {

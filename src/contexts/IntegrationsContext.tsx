@@ -15,27 +15,56 @@ export const APP_COLORS = [
   '#84CC16', // Lime
 ];
 
-// Default integrations catalog
+// Default integrations catalog - expanded with all Control Center requirements
 const DEFAULT_INTEGRATIONS: Integration[] = [
+  // ============= DOMAIN =============
+  { id: 'namecheap', name: 'Namecheap', description: 'Domain registration and DNS management', icon: '🌐', category: 'Domain', status: 'pending', linkedApps: [] },
+  
+  // ============= DATABASE =============
+  { id: 'supabase', name: 'Supabase', description: 'Database, auth, realtime, and storage', icon: '⚡', category: 'Database', status: 'pending', linkedApps: [] },
+  
+  // ============= HOSTING =============
+  { id: 'lovable-cloud', name: 'Lovable Cloud', description: 'App hosting and deployment platform', icon: '💜', category: 'Hosting', status: 'pending', linkedApps: [] },
+  
+  // ============= INFRASTRUCTURE =============
+  { id: 'letsencrypt', name: "Let's Encrypt", description: 'Free SSL/TLS certificate provisioning', icon: '🔒', category: 'Infrastructure', status: 'pending', linkedApps: [] },
+  
+  // ============= PAYMENTS =============
   { id: 'stripe', name: 'Stripe', description: 'Payment processing and subscription management', icon: '💳', category: 'Payments', status: 'pending', linkedApps: [] },
   { id: 'paypal', name: 'PayPal', description: 'Online payment processing', icon: '💰', category: 'Payments', status: 'pending', linkedApps: [] },
+  
+  // ============= EMAIL =============
+  { id: 'sendgrid', name: 'SendGrid', description: 'Transactional and marketing emails', icon: '✉️', category: 'Email', status: 'pending', linkedApps: [] },
+  { id: 'gmail-api', name: 'Gmail API', description: 'Google email sync via OAuth 2.0', icon: '📧', category: 'Email', status: 'pending', linkedApps: [] },
+  { id: 'microsoft-graph', name: 'Microsoft Graph', description: 'Outlook email sync via OAuth 2.0', icon: '📬', category: 'Email', status: 'pending', linkedApps: [] },
+  { id: 'mailchimp', name: 'Mailchimp', description: 'Email marketing automation', icon: '🐵', category: 'Email', status: 'pending', linkedApps: [] },
+  
+  // ============= ANALYTICS =============
+  { id: 'google-analytics', name: 'Google Analytics', description: 'Website traffic and user behavior', icon: '📊', category: 'Analytics', status: 'pending', linkedApps: [] },
+  { id: 'mixpanel', name: 'Mixpanel', description: 'Product analytics and insights', icon: '📈', category: 'Analytics', status: 'pending', linkedApps: [] },
+  
+  // ============= AUTH =============
+  { id: 'auth0', name: 'Auth0', description: 'Authentication and authorization', icon: '🔐', category: 'Auth', status: 'pending', linkedApps: [] },
+  
+  // ============= STORAGE =============
+  { id: 'aws-s3', name: 'AWS S3', description: 'Cloud file storage', icon: '☁️', category: 'Storage', status: 'pending', linkedApps: [] },
+  { id: 'cloudinary', name: 'Cloudinary', description: 'Image and video management', icon: '🖼️', category: 'Storage', status: 'pending', linkedApps: [] },
+  
+  // ============= DEVELOPMENT =============
+  { id: 'github', name: 'GitHub', description: 'Version control and deployments', icon: '🐙', category: 'Development', status: 'pending', linkedApps: [] },
+  { id: 'vercel', name: 'Vercel', description: 'Frontend deployment and hosting', icon: '▲', category: 'Development', status: 'pending', linkedApps: [] },
+  
+  // ============= COMMUNICATION =============
+  { id: 'slack', name: 'Slack', description: 'Team notifications and alerts', icon: '💬', category: 'Communication', status: 'pending', linkedApps: [] },
+  { id: 'discord', name: 'Discord', description: 'Community messaging and voice', icon: '🎮', category: 'Communication', status: 'pending', linkedApps: [] },
+  
+  // ============= SOCIAL =============
   { id: 'instagram', name: 'Instagram', description: 'Social media management and posting', icon: '📸', category: 'Social', status: 'pending', linkedApps: [] },
   { id: 'facebook', name: 'Facebook', description: 'Social media and advertising', icon: '👥', category: 'Social', status: 'pending', linkedApps: [] },
   { id: 'tiktok', name: 'TikTok', description: 'Short-form video platform', icon: '🎵', category: 'Social', status: 'pending', linkedApps: [] },
   { id: 'twitter', name: 'X (Twitter)', description: 'Social networking and microblogging', icon: '𝕏', category: 'Social', status: 'pending', linkedApps: [] },
   { id: 'youtube', name: 'YouTube', description: 'Video hosting and streaming', icon: '▶️', category: 'Social', status: 'pending', linkedApps: [] },
   { id: 'linkedin', name: 'LinkedIn', description: 'Professional networking', icon: '💼', category: 'Social', status: 'pending', linkedApps: [] },
-  { id: 'discord', name: 'Discord', description: 'Community messaging and voice', icon: '🎮', category: 'Communication', status: 'pending', linkedApps: [] },
-  { id: 'slack', name: 'Slack', description: 'Team notifications and alerts', icon: '💬', category: 'Communication', status: 'pending', linkedApps: [] },
-  { id: 'google-analytics', name: 'Google Analytics', description: 'Website traffic and user behavior', icon: '📊', category: 'Analytics', status: 'pending', linkedApps: [] },
-  { id: 'mixpanel', name: 'Mixpanel', description: 'Product analytics and insights', icon: '📈', category: 'Analytics', status: 'pending', linkedApps: [] },
-  { id: 'sendgrid', name: 'SendGrid', description: 'Transactional and marketing emails', icon: '✉️', category: 'Email', status: 'pending', linkedApps: [] },
-  { id: 'mailchimp', name: 'Mailchimp', description: 'Email marketing automation', icon: '📧', category: 'Email', status: 'pending', linkedApps: [] },
-  { id: 'github', name: 'GitHub', description: 'Version control and deployments', icon: '🐙', category: 'Development', status: 'pending', linkedApps: [] },
-  { id: 'vercel', name: 'Vercel', description: 'Frontend deployment and hosting', icon: '▲', category: 'Development', status: 'pending', linkedApps: [] },
-  { id: 'aws-s3', name: 'AWS S3', description: 'Cloud file storage', icon: '☁️', category: 'Storage', status: 'pending', linkedApps: [] },
-  { id: 'cloudinary', name: 'Cloudinary', description: 'Image and video management', icon: '🖼️', category: 'Storage', status: 'pending', linkedApps: [] },
-  { id: 'auth0', name: 'Auth0', description: 'Authentication and authorization', icon: '🔐', category: 'Auth', status: 'pending', linkedApps: [] },
 ];
 
 interface IntegrationsContextType {
