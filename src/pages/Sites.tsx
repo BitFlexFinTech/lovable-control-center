@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, MoreHorizontal, ExternalLink, Settings, RefreshCw, Search, Filter, Globe } from 'lucide-react';
+import { MoreHorizontal, ExternalLink, Settings, RefreshCw, Search, Filter, Globe, Rocket } from 'lucide-react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { StatusPill } from '@/components/dashboard/StatusPill';
@@ -22,13 +22,18 @@ import {
 import { useTenant } from '@/contexts/TenantContext';
 import { sites as initialSites, tenants } from '@/data/seed-data';
 import { CreateSiteWithDomainDialog } from '@/components/mail/CreateSiteWithDomainDialog';
+import { GoLiveDialog } from '@/components/sites/GoLiveDialog';
+import { usePasswordManager } from '@/contexts/PasswordManagerContext';
 import { useToast } from '@/hooks/use-toast';
 
 const Sites = () => {
   const { toast } = useToast();
   const [isCreateSiteOpen, setIsCreateSiteOpen] = useState(false);
+  const [isGoLiveOpen, setIsGoLiveOpen] = useState(false);
+  const [selectedSite, setSelectedSite] = useState<typeof initialSites[0] | null>(null);
   const [sites, setSites] = useState(initialSites);
   const { currentTenant } = useTenant();
+  const { credentials } = usePasswordManager();
   const [searchQuery, setSearchQuery] = useState('');
 
   const filteredSites = sites
@@ -83,6 +88,25 @@ const Sites = () => {
     setSites(prev => [newSite, ...prev]);
   };
 
+  const handleGoLive = (site: typeof initialSites[0]) => {
+    setSelectedSite(site);
+    setIsGoLiveOpen(true);
+  };
+
+  const handleGoLiveComplete = async () => {
+    if (!selectedSite) return;
+    setSites(prev => prev.map(s => 
+      s.id === selectedSite.id 
+        ? { ...s, demoMode: { isDemo: false, isLive: true, goLiveAt: new Date().toISOString() } }
+        : s
+    ));
+    toast({ title: 'Site is now live!', description: `${selectedSite.name} has been published.` });
+  };
+
+  const siteCredentials = selectedSite 
+    ? credentials.filter(c => c.siteId === selectedSite.id)
+    : [];
+
   return (
     <DashboardLayout>
       {/* Page Header */}
@@ -132,87 +156,99 @@ const Sites = () => {
             <TableRow className="hover:bg-transparent border-border">
               <TableHead className="text-muted-foreground">Site</TableHead>
               <TableHead className="text-muted-foreground">Tenant</TableHead>
+              <TableHead className="text-muted-foreground">Mode</TableHead>
               <TableHead className="text-muted-foreground">Status</TableHead>
-              <TableHead className="text-muted-foreground">Dashboards</TableHead>
+              <TableHead className="text-muted-foreground">Integrations</TableHead>
               <TableHead className="text-muted-foreground">Health</TableHead>
-              <TableHead className="text-muted-foreground">Last Sync</TableHead>
               <TableHead className="text-muted-foreground w-[50px]"></TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody>
-            {filteredSites.map((site) => (
-              <TableRow key={site.id} className="border-border hover:bg-muted/50">
-                <TableCell>
-                  <div>
-                    <p className="font-medium">{site.name}</p>
-                    <p className="text-sm text-muted-foreground truncate max-w-[200px]">{site.url}</p>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <span className="text-sm">{getTenantName(site.tenantId)}</span>
-                </TableCell>
-                <TableCell>
-                  <StatusPill status={site.status} />
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-1">
-                    {site.dashboards.slice(0, 3).map((dashboard) => (
-                      <Badge key={dashboard.id} variant="muted" className="text-xs">
-                        {dashboard.name}
+          <TableBody data-tour="sites-table">
+            {filteredSites.map((site) => {
+              const isDemo = site.demoMode?.isDemo !== false;
+              const integrationCount = site.integrationCount || site.requiredIntegrations?.length || 0;
+              
+              return (
+                <TableRow key={site.id} className="border-border hover:bg-muted/50">
+                  <TableCell>
+                    <div>
+                      <p className="font-medium">{site.name}</p>
+                      <p className="text-sm text-muted-foreground truncate max-w-[200px]">{site.url}</p>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <span className="text-sm">{getTenantName(site.tenantId)}</span>
+                  </TableCell>
+                  <TableCell>
+                    {isDemo ? (
+                      <Badge data-tour="demo-badge" className="bg-status-warning/20 text-status-warning border-status-warning/30">
+                        Demo
                       </Badge>
-                    ))}
-                    {site.dashboards.length > 3 && (
-                      <Badge variant="muted" className="text-xs">
-                        +{site.dashboards.length - 3}
+                    ) : (
+                      <Badge className="bg-status-active/20 text-status-active border-status-active/30">
+                        Live
                       </Badge>
                     )}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="text-sm">
-                    <span className={
-                      site.healthCheck.responseTime < 200 ? 'text-status-active' :
-                      site.healthCheck.responseTime < 500 ? 'text-status-warning' :
-                      'text-status-inactive'
-                    }>
-                      {site.healthCheck.responseTime}ms
+                  </TableCell>
+                  <TableCell>
+                    <StatusPill status={site.status} />
+                  </TableCell>
+                  <TableCell>
+                    <span className="text-sm text-muted-foreground">
+                      {integrationCount} accounts
                     </span>
-                    <span className="text-muted-foreground ml-2">
-                      {site.healthCheck.uptime}% up
-                    </span>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <span className="text-sm text-muted-foreground">
-                    {formatDate(site.lastSync)}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon-sm">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48">
-                      <DropdownMenuItem className="gap-2">
-                        <ExternalLink className="h-4 w-4" />
-                        Open Site
-                      </DropdownMenuItem>
-                      <DropdownMenuItem className="gap-2">
-                        <Settings className="h-4 w-4" />
-                        Settings
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem className="gap-2">
-                        <RefreshCw className="h-4 w-4" />
-                        Force Sync
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            ))}
+                  </TableCell>
+                  <TableCell>
+                    <div className="text-sm">
+                      <span className={
+                        site.healthCheck.responseTime < 200 ? 'text-status-active' :
+                        site.healthCheck.responseTime < 500 ? 'text-status-warning' :
+                        'text-status-inactive'
+                      }>
+                        {site.healthCheck.responseTime}ms
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon-sm">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuItem className="gap-2">
+                          <ExternalLink className="h-4 w-4" />
+                          Open Site
+                        </DropdownMenuItem>
+                        <DropdownMenuItem className="gap-2">
+                          <Settings className="h-4 w-4" />
+                          Settings
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem className="gap-2">
+                          <RefreshCw className="h-4 w-4" />
+                          Force Sync
+                        </DropdownMenuItem>
+                        {isDemo && (
+                          <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem 
+                              className="gap-2 text-status-active"
+                              onClick={() => handleGoLive(site)}
+                              data-tour="go-live-button"
+                            >
+                              <Rocket className="h-4 w-4" />
+                              Go Live
+                            </DropdownMenuItem>
+                          </>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </div>
@@ -223,6 +259,18 @@ const Sites = () => {
         onCreate={handleCreateSite}
         tenantId={currentTenant?.id || 'tenant-1'}
       />
+
+      {selectedSite && (
+        <GoLiveDialog
+          isOpen={isGoLiveOpen}
+          onClose={() => setIsGoLiveOpen(false)}
+          siteName={selectedSite.name}
+          siteDomain={selectedSite.domain || selectedSite.url.replace('https://', '')}
+          domainPrice={12.99}
+          credentials={siteCredentials}
+          onGoLive={handleGoLiveComplete}
+        />
+      )}
     </DashboardLayout>
   );
 };

@@ -67,6 +67,13 @@ export interface HealthCheck {
   uptime: number;
 }
 
+export interface DemoMode {
+  isDemo: boolean;
+  isLive: boolean;
+  activatedAt?: string;
+  goLiveAt?: string;
+}
+
 export interface Site {
   id: string;
   tenantId: string;
@@ -88,6 +95,9 @@ export interface Site {
   domainStatus?: 'pending' | 'purchased' | 'active';
   requiredIntegrations?: string[];
   appColor?: string;
+  // Demo mode fields
+  demoMode?: DemoMode;
+  integrationCount?: number;
 }
 
 export interface User {
