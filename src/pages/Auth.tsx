@@ -39,33 +39,73 @@ const Auth = () => {
   // GodMode: One-click Super Admin login
   const handleGodMode = async () => {
     setIsGodModeLoading(true);
-    // Use a pre-configured super admin account
-    const { error } = await signIn('admin@controlcenter.io', 'SuperAdmin123!');
-    setIsGodModeLoading(false);
-
-    if (error) {
-      // If account doesn't exist, create it first
-      const signUpResult = await signUp('admin@controlcenter.io', 'SuperAdmin123!', 'Super Admin');
-      if (signUpResult.error) {
-        toast({
-          title: 'GodMode Failed',
-          description: 'Could not create or access Super Admin account. Try regular login.',
-          variant: 'destructive',
-        });
-      } else {
+    const godModeEmail = 'superadmin@controlcenter.local';
+    const godModePassword = 'GodMode123!';
+    
+    try {
+      // First try to sign in
+      const signInResult = await signIn(godModeEmail, godModePassword);
+      
+      if (!signInResult.error) {
         toast({
           title: '⚡ GodMode Activated',
-          description: 'Super Admin account created. Welcome, God.',
+          description: 'Welcome back, Super Admin.',
         });
         navigate('/');
+        setIsGodModeLoading(false);
+        return;
       }
-    } else {
+
+      // If sign-in failed, try to create the account
+      const signUpResult = await signUp(godModeEmail, godModePassword, 'Super Admin');
+      
+      if (!signUpResult.error) {
+        // Account created - with auto-confirm enabled, sign in immediately
+        const retryLogin = await signIn(godModeEmail, godModePassword);
+        if (!retryLogin.error) {
+          toast({
+            title: '⚡ GodMode Activated',
+            description: 'Super Admin account created. Welcome!',
+          });
+          navigate('/');
+        } else {
+          toast({
+            title: '⚡ GodMode Ready',
+            description: 'Account created. Click GodMode again to enter.',
+          });
+        }
+      } else if (signUpResult.error?.message?.includes('already registered')) {
+        // Account exists but sign-in failed - retry once more
+        const finalAttempt = await signIn(godModeEmail, godModePassword);
+        if (!finalAttempt.error) {
+          toast({
+            title: '⚡ GodMode Activated',
+            description: 'Welcome back, Super Admin.',
+          });
+          navigate('/');
+        } else {
+          toast({
+            title: 'GodMode Failed',
+            description: 'Could not access Super Admin account. Check credentials.',
+            variant: 'destructive',
+          });
+        }
+      } else {
+        toast({
+          title: 'GodMode Failed',
+          description: signUpResult.error?.message || 'Could not create Super Admin account.',
+          variant: 'destructive',
+        });
+      }
+    } catch (err) {
       toast({
-        title: '⚡ GodMode Activated',
-        description: 'Welcome back, Super Admin.',
+        title: 'GodMode Error',
+        description: 'An unexpected error occurred. Please try again.',
+        variant: 'destructive',
       });
-      navigate('/');
     }
+    
+    setIsGodModeLoading(false);
   };
 
   useEffect(() => {
