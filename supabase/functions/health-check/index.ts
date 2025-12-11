@@ -38,7 +38,7 @@ serve(async (req) => {
         sites: sitesCount || 0,
         tenants: tenantsCount || 0,
       },
-      uptime: process.uptime ? process.uptime() : 'N/A',
+      uptime: 'N/A',
     };
 
     console.log('Health check performed:', healthResponse.status);
@@ -47,13 +47,13 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: dbConnected ? 200 : 503,
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Health check error:', error);
     return new Response(JSON.stringify({
       status: 'error',
       timestamp: new Date().toISOString(),
       version: '1.0.0',
-      error: error.message,
+      error: error instanceof Error ? error.message : 'Unknown error',
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
