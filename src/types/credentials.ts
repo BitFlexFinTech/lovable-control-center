@@ -403,31 +403,30 @@ export const integrationTemplates: IntegrationTemplate[] = [
   },
 ];
 
-// Control Center required integrations - expanded list based on codebase analysis
+// Control Center required integrations - Auth0 removed (using Supabase Auth)
 export const CONTROL_CENTER_INTEGRATIONS = [
   // Critical - Required for operation
-  'auth0',           // Admin authentication
-  'supabase',        // Database & real-time
+  'supabase',        // Database, Auth, Realtime & Storage (FREE tier available)
   'namecheap',       // Domain registration
-  'letsencrypt',     // SSL certificates
+  'letsencrypt',     // SSL certificates (FREE)
   
   // Email Infrastructure
-  'sendgrid',        // Transactional email
-  'gmail-api',       // Email sync (Gmail)
-  'microsoft-graph', // Email sync (Outlook)
+  'sendgrid',        // Transactional email (100/day FREE)
+  'gmail-api',       // Email sync (FREE)
+  'microsoft-graph', // Email sync (FREE with M365)
   
   // Monitoring & Analytics
-  'google-analytics', // Usage tracking
+  'google-analytics', // Usage tracking (FREE)
   
   // Storage & Files
-  'aws-s3',          // File storage & backups
+  'aws-s3',          // File storage & backups (5GB FREE for 12 months)
   
   // Development & Deployment
-  'github',          // Version control
-  'lovable-cloud',   // Hosting platform
+  'github',          // Version control (FREE)
+  'lovable-cloud',   // Hosting platform (included)
   
   // Communication
-  'slack',           // Admin alerts & notifications
+  'slack',           // Admin alerts & notifications (FREE tier)
 ];
 
 export const CONTROL_CENTER_APP = {
