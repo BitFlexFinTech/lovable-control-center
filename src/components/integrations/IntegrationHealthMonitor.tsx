@@ -1,14 +1,14 @@
+import { useState, useEffect, useCallback } from 'react';
 import { RefreshCw, Activity, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useIntegrationHealth } from '@/contexts/IntegrationHealthContext';
-import { useIntegrationHealthSummary } from '@/hooks/useIntegrationHealth';
 import { HealthStatusBadge } from './HealthStatusBadge';
 import { QuotaProgressBar } from './QuotaProgressBar';
 import { TokenExpirationAlert } from './TokenExpirationAlert';
 import { CONTROL_CENTER_INTEGRATIONS } from '@/types/credentials';
+import { IntegrationHealthStatus, HealthAlert } from '@/types/integrationHealth';
 import { cn } from '@/lib/utils';
 
 const integrationNames: Record<string, string> = {
@@ -25,12 +25,145 @@ const integrationNames: Record<string, string> = {
   'aws-s3': 'AWS S3',
 };
 
+// Simulate health check results
+function simulateHealthCheck(integrationId: string): IntegrationHealthStatus {
+  const now = new Date().toISOString();
+  const random = Math.random();
+  
+  let status: IntegrationHealthStatus['status'] = 'healthy';
+  let connectionStatus: IntegrationHealthStatus['connectionStatus'] = 'connected';
+  
+  if (random > 0.9) {
+    status = 'error';
+    connectionStatus = 'disconnected';
+  } else if (random > 0.8) {
+    status = 'warning';
+  }
+
+  const baseHealth: IntegrationHealthStatus = {
+    integrationId,
+    status,
+    connectionStatus,
+    lastChecked: now,
+    lastSuccessfulCall: status !== 'error' ? now : undefined,
+  };
+
+  // Add quota info for relevant integrations
+  if (['sendgrid', 'gmail-api', 'github'].includes(integrationId)) {
+    const quotaUsed = Math.floor(Math.random() * 100);
+    baseHealth.quota = {
+      used: quotaUsed,
+      limit: 100,
+      resetAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      percentUsed: quotaUsed,
+    };
+    if (quotaUsed > 80) baseHealth.status = 'warning';
+  }
+
+  // Add token expiration for OAuth integrations
+  if (['gmail-api', 'microsoft-graph', 'slack', 'github'].includes(integrationId)) {
+    const daysRemaining = Math.floor(Math.random() * 30);
+    baseHealth.tokenExpiration = {
+      expiresAt: new Date(Date.now() + daysRemaining * 24 * 60 * 60 * 1000).toISOString(),
+      daysRemaining,
+      needsRefresh: daysRemaining < 7,
+    };
+    if (daysRemaining < 7) baseHealth.status = 'warning';
+  }
+
+  // Add rate limit info
+  if (['supabase', 'github', 'sendgrid'].includes(integrationId)) {
+    const remaining = Math.floor(Math.random() * 1000);
+    baseHealth.rateLimit = {
+      remaining,
+      limit: 1000,
+      resetAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+      isLimited: remaining < 10,
+    };
+  }
+
+  if (status === 'error') {
+    baseHealth.error = {
+      code: 'CONNECTION_FAILED',
+      message: 'Unable to connect to the integration API',
+      occurredAt: now,
+      resolution: 'Check your API credentials and network connection',
+    };
+  }
+
+  return baseHealth;
+}
+
 export function IntegrationHealthMonitor() {
-  const { healthStatuses, checkAllHealth, isChecking, lastGlobalCheck, alerts, acknowledgeAlert } = useIntegrationHealth();
-  const { healthy, warning, error, healthScore, pendingAlerts } = useIntegrationHealthSummary();
+  const [healthStatuses, setHealthStatuses] = useState<Record<string, IntegrationHealthStatus>>({});
+  const [isChecking, setIsChecking] = useState(false);
+  const [lastGlobalCheck, setLastGlobalCheck] = useState<string | null>(null);
+  const [alerts, setAlerts] = useState<HealthAlert[]>([]);
+
+  const checkAllHealth = useCallback(async () => {
+    setIsChecking(true);
+    const newStatuses: Record<string, IntegrationHealthStatus> = {};
+    
+    for (const id of CONTROL_CENTER_INTEGRATIONS) {
+      newStatuses[id] = simulateHealthCheck(id);
+    }
+    
+    setHealthStatuses(newStatuses);
+    setLastGlobalCheck(new Date().toISOString());
+    
+    // Generate alerts
+    const newAlerts: HealthAlert[] = [];
+    Object.values(newStatuses).forEach(status => {
+      const name = integrationNames[status.integrationId] || status.integrationId;
+      if (status.status === 'error') {
+        newAlerts.push({
+          id: `${status.integrationId}-error`,
+          integrationId: status.integrationId,
+          integrationName: name,
+          type: 'connection_error',
+          severity: 'critical',
+          message: `${name} connection failed`,
+          actionRequired: 'Check credentials and reconnect',
+          createdAt: new Date().toISOString(),
+          acknowledged: false,
+        });
+      }
+      if (status.quota && status.quota.percentUsed > 80) {
+        newAlerts.push({
+          id: `${status.integrationId}-quota`,
+          integrationId: status.integrationId,
+          integrationName: name,
+          type: 'quota_warning',
+          severity: status.quota.percentUsed > 95 ? 'high' : 'medium',
+          message: `${name} quota at ${status.quota.percentUsed}%`,
+          actionRequired: 'Consider upgrading plan',
+          createdAt: new Date().toISOString(),
+          acknowledged: false,
+        });
+      }
+    });
+    setAlerts(newAlerts);
+    setIsChecking(false);
+  }, []);
+
+  const acknowledgeAlert = useCallback((alertId: string) => {
+    setAlerts(prev => prev.map(a => 
+      a.id === alertId ? { ...a, acknowledged: true } : a
+    ));
+  }, []);
+
+  useEffect(() => {
+    checkAllHealth();
+  }, [checkAllHealth]);
+
+  const statuses = Object.values(healthStatuses);
+  const healthy = statuses.filter(s => s.status === 'healthy').length;
+  const warning = statuses.filter(s => s.status === 'warning').length;
+  const error = statuses.filter(s => s.status === 'error').length;
+  const healthScore = statuses.length === 0 ? 100 : Math.round((healthy / statuses.length) * 100);
 
   const activeAlerts = alerts.filter(a => !a.acknowledged);
-  const tokenAlerts = Object.values(healthStatuses)
+  const tokenAlerts = statuses
     .filter(s => s.tokenExpiration?.needsRefresh)
     .map(s => ({
       integrationId: s.integrationId,
@@ -133,7 +266,7 @@ export function IntegrationHealthMonitor() {
           <div className="space-y-2">
             <h4 className="text-sm font-medium flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-status-warning" />
-              Active Alerts ({pendingAlerts})
+              Active Alerts ({activeAlerts.length})
             </h4>
             <ScrollArea className="max-h-32">
               <div className="space-y-2">
