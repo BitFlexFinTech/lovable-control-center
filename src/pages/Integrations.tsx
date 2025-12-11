@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Plug, Search } from 'lucide-react';
+import { Plug, Search, Shield } from 'lucide-react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 import {
   Select,
   SelectContent,
@@ -13,6 +14,8 @@ import {
 import { IntegrationCard } from '@/components/integrations/IntegrationCard';
 import { IntegrationSection } from '@/components/integrations/IntegrationSection';
 import { IntegrationSetupDialog } from '@/components/sites/IntegrationSetupDialog';
+import { IntegrationHealthMonitor } from '@/components/integrations/IntegrationHealthMonitor';
+import { CostCalculatorWidget } from '@/components/integrations/CostCalculatorWidget';
 import { useIntegrations } from '@/contexts/IntegrationsContext';
 import { CONTROL_CENTER_INTEGRATIONS, CONTROL_CENTER_APP } from '@/types/credentials';
 
@@ -101,64 +104,70 @@ const Integrations = () => {
 
   return (
     <DashboardLayout>
-      {/* Page Header */}
-      <div className="mb-8 opacity-0 animate-fade-in">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Integrations</h1>
-            <p className="text-muted-foreground mt-1">
-              Third-party services connected to your apps
-            </p>
+      <div className="grid lg:grid-cols-[1fr,340px] gap-6">
+        {/* Main Content */}
+        <div>
+          {/* Page Header */}
+          <div className="mb-8 opacity-0 animate-fade-in">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-2xl font-semibold tracking-tight">Integrations</h1>
+                  <Badge variant="secondary" className="bg-status-active/10 text-status-active gap-1">
+                    <Shield className="h-3 w-3" />
+                    Auth via Supabase
+                  </Badge>
+                </div>
+                <p className="text-muted-foreground mt-1">
+                  Third-party services connected to your apps
+                </p>
+              </div>
+              <div className="flex items-center gap-4 text-sm">
+                <div className="px-3 py-1.5 rounded-lg bg-primary/10 text-primary">
+                  <span className="font-semibold">{ccActiveCount}</span> Control Center
+                </div>
+                <div className="px-3 py-1.5 rounded-lg bg-status-active/10 text-status-active">
+                  <span className="font-semibold">{siteActiveCount}</span> Sites
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="flex items-center gap-4 text-sm">
-            <div className="px-3 py-1.5 rounded-lg bg-primary/10 text-primary">
-              <span className="font-semibold">{ccActiveCount}</span> Control Center
+
+          {/* Filters */}
+          <div className="flex flex-wrap gap-3 mb-6 opacity-0 animate-fade-in" style={{ animationDelay: '50ms' }}>
+            <div className="relative flex-1 min-w-[200px] max-w-xs">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search integrations..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9"
+              />
             </div>
-            <div className="px-3 py-1.5 rounded-lg bg-status-active/10 text-status-active">
-              <span className="font-semibold">{siteActiveCount}</span> Sites
-            </div>
-            <div className="px-3 py-1.5 rounded-lg bg-muted">
-              <span className="font-semibold">{totalApps}</span> apps
-            </div>
+            
+            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <SelectTrigger className="w-[160px]">
+                <SelectValue placeholder="Category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                {categories.map(cat => (
+                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="active">In Use</SelectItem>
+                <SelectItem value="inactive">Not in Use</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-        </div>
-      </div>
-
-      {/* Filters */}
-      <div className="flex flex-wrap gap-3 mb-6 opacity-0 animate-fade-in" style={{ animationDelay: '50ms' }}>
-        <div className="relative flex-1 min-w-[200px] max-w-xs">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search integrations..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9"
-          />
-        </div>
-        
-        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-          <SelectTrigger className="w-[160px]">
-            <SelectValue placeholder="Category" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Categories</SelectItem>
-            {categories.map(cat => (
-              <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[140px]">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="active">In Use</SelectItem>
-            <SelectItem value="inactive">Not in Use</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
 
       {/* Control Center Section */}
       <IntegrationSection
@@ -225,18 +234,26 @@ const Integrations = () => {
         )}
       </IntegrationSection>
 
-      {/* Integration Setup Dialog */}
-      {selectedIntegrationId && (
-        <IntegrationSetupDialog
-          isOpen={setupDialogOpen}
-          onClose={() => {
-            setSetupDialogOpen(false);
-            setSelectedIntegrationId(null);
-          }}
-          integrationId={selectedIntegrationId}
-          onComplete={handleSetupComplete}
-        />
-      )}
+          {/* Integration Setup Dialog */}
+          {selectedIntegrationId && (
+            <IntegrationSetupDialog
+              isOpen={setupDialogOpen}
+              onClose={() => {
+                setSetupDialogOpen(false);
+                setSelectedIntegrationId(null);
+              }}
+              integrationId={selectedIntegrationId}
+              onComplete={handleSetupComplete}
+            />
+          )}
+        </div>
+
+        {/* Sidebar with Health Monitor & Cost Calculator */}
+        <div className="space-y-6">
+          <IntegrationHealthMonitor />
+          <CostCalculatorWidget />
+        </div>
+      </div>
     </DashboardLayout>
   );
 };

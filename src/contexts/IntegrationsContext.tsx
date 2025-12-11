@@ -30,8 +30,8 @@ const DEFAULT_INTEGRATIONS: Integration[] = [
   // ============= DOMAIN =============
   { id: 'namecheap', name: 'Namecheap', description: 'Domain registration and DNS management', icon: '🌐', category: 'Domain', status: 'pending', linkedApps: [] },
   
-  // ============= DATABASE =============
-  { id: 'supabase', name: 'Supabase', description: 'Database, auth, realtime, and storage', icon: '⚡', category: 'Database', status: 'pending', linkedApps: [] },
+  // ============= DATABASE & AUTH =============
+  { id: 'supabase', name: 'Supabase', description: 'Database, Authentication, Realtime & Storage (Auth0 not needed)', icon: '⚡', category: 'Database', status: 'pending', linkedApps: [] },
   
   // ============= HOSTING =============
   { id: 'lovable-cloud', name: 'Lovable Cloud', description: 'App hosting and deployment platform', icon: '💜', category: 'Hosting', status: 'pending', linkedApps: [] },
@@ -53,9 +53,9 @@ const DEFAULT_INTEGRATIONS: Integration[] = [
   { id: 'google-analytics', name: 'Google Analytics', description: 'Website traffic and user behavior', icon: '📊', category: 'Analytics', status: 'pending', linkedApps: [] },
   { id: 'mixpanel', name: 'Mixpanel', description: 'Product analytics and insights', icon: '📈', category: 'Analytics', status: 'pending', linkedApps: [] },
   
-  // ============= AUTH =============
-  { id: 'auth0', name: 'Auth0', description: 'Authentication and authorization', icon: '🔐', category: 'Auth', status: 'pending', linkedApps: [] },
-  
+  // ============= AUTH (handled by Supabase) =============
+  // Auth0 removed - using Supabase Auth instead for cost savings
+
   // ============= STORAGE =============
   { id: 'aws-s3', name: 'AWS S3', description: 'Cloud file storage', icon: '☁️', category: 'Storage', status: 'pending', linkedApps: [] },
   { id: 'cloudinary', name: 'Cloudinary', description: 'Image and video management', icon: '🖼️', category: 'Storage', status: 'pending', linkedApps: [] },
