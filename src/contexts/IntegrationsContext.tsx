@@ -25,6 +25,14 @@ const CONTROL_CENTER_APP: LinkedApp = {
   linkedAt: new Date().toISOString(),
 };
 
+// In-app alternatives that work immediately without external setup
+export const IN_APP_ALTERNATIVES: Record<string, { name: string; description: string }> = {
+  'sendgrid': { name: 'Mock Email Mode', description: 'Emails logged for testing (upgrade to Resend for production)' },
+  'aws-s3': { name: 'Supabase Storage', description: 'File storage via Supabase uploads bucket' },
+  'google-analytics': { name: 'In-App Analytics', description: 'Event tracking to Supabase analytics_events table' },
+  'slack': { name: 'In-App Notifications', description: 'Alerts via NotificationCenter' },
+};
+
 // Default integrations catalog - expanded with all Control Center requirements
 const DEFAULT_INTEGRATIONS: Integration[] = [
   // ============= DOMAIN =============
@@ -44,20 +52,20 @@ const DEFAULT_INTEGRATIONS: Integration[] = [
   { id: 'paypal', name: 'PayPal', description: 'Online payment processing', icon: '💰', category: 'Payments', status: 'pending', linkedApps: [] },
   
   // ============= EMAIL =============
-  { id: 'sendgrid', name: 'SendGrid', description: 'Transactional and marketing emails', icon: '✉️', category: 'Email', status: 'pending', linkedApps: [] },
+  { id: 'sendgrid', name: 'SendGrid', description: 'Transactional and marketing emails', icon: '✉️', category: 'Email', status: 'active', linkedApps: [] },
   { id: 'gmail-api', name: 'Gmail API', description: 'Google email sync via OAuth 2.0', icon: '📧', category: 'Email', status: 'pending', linkedApps: [] },
   { id: 'microsoft-graph', name: 'Microsoft Graph', description: 'Outlook email sync via OAuth 2.0', icon: '📬', category: 'Email', status: 'pending', linkedApps: [] },
   { id: 'mailchimp', name: 'Mailchimp', description: 'Email marketing automation', icon: '🐵', category: 'Email', status: 'pending', linkedApps: [] },
   
   // ============= ANALYTICS =============
-  { id: 'google-analytics', name: 'Google Analytics', description: 'Website traffic and user behavior', icon: '📊', category: 'Analytics', status: 'pending', linkedApps: [] },
+  { id: 'google-analytics', name: 'Google Analytics', description: 'Website traffic and user behavior', icon: '📊', category: 'Analytics', status: 'active', linkedApps: [] },
   { id: 'mixpanel', name: 'Mixpanel', description: 'Product analytics and insights', icon: '📈', category: 'Analytics', status: 'pending', linkedApps: [] },
   
   // ============= AUTH (handled by Supabase) =============
   // Auth0 removed - using Supabase Auth instead for cost savings
 
   // ============= STORAGE =============
-  { id: 'aws-s3', name: 'AWS S3', description: 'Cloud file storage', icon: '☁️', category: 'Storage', status: 'pending', linkedApps: [] },
+  { id: 'aws-s3', name: 'AWS S3', description: 'Cloud file storage', icon: '☁️', category: 'Storage', status: 'active', linkedApps: [] },
   { id: 'cloudinary', name: 'Cloudinary', description: 'Image and video management', icon: '🖼️', category: 'Storage', status: 'pending', linkedApps: [] },
   
   // ============= DEVELOPMENT =============
@@ -65,7 +73,7 @@ const DEFAULT_INTEGRATIONS: Integration[] = [
   { id: 'vercel', name: 'Vercel', description: 'Frontend deployment and hosting', icon: '▲', category: 'Development', status: 'pending', linkedApps: [] },
   
   // ============= COMMUNICATION =============
-  { id: 'slack', name: 'Slack', description: 'Team notifications and alerts', icon: '💬', category: 'Communication', status: 'pending', linkedApps: [] },
+  { id: 'slack', name: 'Slack', description: 'Team notifications and alerts', icon: '💬', category: 'Communication', status: 'active', linkedApps: [] },
   { id: 'discord', name: 'Discord', description: 'Community messaging and voice', icon: '🎮', category: 'Communication', status: 'pending', linkedApps: [] },
   
   // ============= SOCIAL =============

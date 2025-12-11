@@ -1,10 +1,12 @@
-import { Settings, ExternalLink, AlertCircle, Check, Import } from 'lucide-react';
+import { Settings, ExternalLink, AlertCircle, Check, Import, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Integration } from '@/types';
 import { AppTag } from './AppTag';
 import { cn } from '@/lib/utils';
 import { CONTROL_CENTER_ANALYSIS } from '@/utils/controlCenterAnalyzer';
+import { IN_APP_ALTERNATIVES } from '@/contexts/IntegrationsContext';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface IntegrationCardProps {
   integration: Integration;
@@ -42,12 +44,15 @@ export function IntegrationCard({
   const needsSetup = isImported && integration.status === 'imported';
   const criticality = getCriticality(integration.id);
   const criticalityStyle = criticalityConfig[criticality];
+  const inAppAlt = IN_APP_ALTERNATIVES[integration.id];
+  const isInAppActive = inAppAlt && integration.status === 'active';
 
   return (
     <div
       className={cn(
         "group rounded-xl border bg-card p-5 transition-all duration-300 hover:shadow-card opacity-0 animate-slide-up",
-        hasLinkedApps ? "border-primary/30" : "border-border hover:border-primary/20"
+        hasLinkedApps ? "border-primary/30" : "border-border hover:border-primary/20",
+        isInAppActive && "border-status-active/40 bg-status-active/5"
       )}
       style={{ animationDelay: `${animationDelay}ms` }}
     >
@@ -56,7 +61,7 @@ export function IntegrationCard({
           <span className="text-2xl">{integration.icon}</span>
           <div>
             <h3 className="font-semibold">{integration.name}</h3>
-            {showCriticality && (
+            {showCriticality && !isInAppActive && (
               <span className={cn(
                 "inline-block text-[10px] px-1.5 py-0.5 rounded border mt-1",
                 criticalityStyle.className
@@ -66,7 +71,20 @@ export function IntegrationCard({
             )}
           </div>
         </div>
-        {isImported && (
+        {isInAppActive ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Badge className="gap-1 bg-status-active/20 text-status-active border-status-active/30">
+                <Sparkles className="h-3 w-3" />
+                In-App
+              </Badge>
+            </TooltipTrigger>
+            <TooltipContent side="left" className="max-w-[200px]">
+              <p className="font-medium">{inAppAlt.name}</p>
+              <p className="text-xs text-muted-foreground">{inAppAlt.description}</p>
+            </TooltipContent>
+          </Tooltip>
+        ) : isImported && (
           <Badge 
             variant={integration.status === 'active' ? 'active' : 'default'}
             className="gap-1"
@@ -87,7 +105,7 @@ export function IntegrationCard({
       </div>
       
       <p className="text-sm text-muted-foreground mb-4">
-        {integration.description}
+        {isInAppActive ? inAppAlt.description : integration.description}
       </p>
 
       {/* Linked Apps */}
@@ -115,7 +133,12 @@ export function IntegrationCard({
       )}
 
       <div className="flex items-center gap-2">
-        {isImported ? (
+        {isInAppActive ? (
+          <div className="text-xs text-status-active flex items-center gap-1.5 flex-1">
+            <Check className="h-3.5 w-3.5" />
+            Working automatically
+          </div>
+        ) : isImported ? (
           <>
             <Button 
               variant="subtle" 
