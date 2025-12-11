@@ -86,6 +86,7 @@ interface IntegrationsContextType {
   getAppsForIntegration: (integrationId: string) => LinkedApp[];
   importIntegrationsForApp: (integrationIds: string[], app: LinkedApp) => void;
   getNextAppColor: () => string;
+  activateIntegration: (integrationId: string) => void;
   isControlCenterInitialized: boolean;
 }
 
@@ -175,6 +176,18 @@ export function IntegrationsProvider({ children }: { children: ReactNode }) {
     }));
   };
 
+  const activateIntegration = (integrationId: string) => {
+    setIntegrations(prev => prev.map(integration => {
+      if (integration.id === integrationId) {
+        return {
+          ...integration,
+          status: 'active' as const,
+        };
+      }
+      return integration;
+    }));
+  };
+
   return (
     <IntegrationsContext.Provider value={{
       integrations,
@@ -185,6 +198,7 @@ export function IntegrationsProvider({ children }: { children: ReactNode }) {
       getAppsForIntegration,
       importIntegrationsForApp,
       getNextAppColor,
+      activateIntegration,
       isControlCenterInitialized,
     }}>
       {children}

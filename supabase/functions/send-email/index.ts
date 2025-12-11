@@ -22,23 +22,10 @@ serve(async (req) => {
 
   try {
     const sendgridApiKey = Deno.env.get('SENDGRID_API_KEY');
-    
-    if (!sendgridApiKey) {
-      console.error('SENDGRID_API_KEY not configured');
-      return new Response(JSON.stringify({
-        success: false,
-        error: 'Email service not configured',
-        code: 'SENDGRID_NOT_CONFIGURED',
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 503,
-      });
-    }
-
     const { to, subject, html, from, text, testMode }: EmailRequest = await req.json();
 
     // Validate required fields
-    if (!to || !subject || !html) {
+    if (!testMode && (!to || !subject || !html)) {
       return new Response(JSON.stringify({
         success: false,
         error: 'Missing required fields: to, subject, html',
@@ -48,13 +35,34 @@ serve(async (req) => {
       });
     }
 
-    // Test mode - just verify configuration
+    // Test mode - verify configuration status
     if (testMode) {
-      console.log('Email test mode - configuration verified');
+      const isConfigured = !!sendgridApiKey;
+      console.log('Email test mode - configured:', isConfigured);
       return new Response(JSON.stringify({
         success: true,
-        message: 'Email service configured correctly',
+        message: isConfigured ? 'Email service configured correctly' : 'Email service running in mock mode',
         testMode: true,
+        mockMode: !isConfigured,
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
+    // Mock mode - when no API key is configured, log and return success
+    if (!sendgridApiKey) {
+      const recipients = Array.isArray(to) ? to : [to];
+      console.log('[MOCK MODE] Email would be sent:', {
+        to: recipients,
+        subject,
+        from: from || 'noreply@controlcenter.local',
+        bodyPreview: html.substring(0, 100) + '...',
+      });
+      return new Response(JSON.stringify({
+        success: true,
+        message: 'Email logged (mock mode - no SendGrid API key)',
+        mockMode: true,
+        recipients: recipients.length,
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });

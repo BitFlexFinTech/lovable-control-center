@@ -36,23 +36,10 @@ serve(async (req) => {
 
   try {
     const webhookUrl = Deno.env.get('SLACK_WEBHOOK_URL');
-    
-    if (!webhookUrl) {
-      console.error('SLACK_WEBHOOK_URL not configured');
-      return new Response(JSON.stringify({
-        success: false,
-        error: 'Slack webhook not configured',
-        code: 'SLACK_NOT_CONFIGURED',
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 503,
-      });
-    }
-
     const { type, title, message, severity = 'low', fields, testMode }: SlackNotification = await req.json();
 
-    // Validate required fields
-    if (!title || !message) {
+    // Validate required fields (not in test mode)
+    if (!testMode && (!title || !message)) {
       return new Response(JSON.stringify({
         success: false,
         error: 'Missing required fields: title, message',
@@ -62,13 +49,34 @@ serve(async (req) => {
       });
     }
 
-    // Test mode - just verify configuration
+    // Test mode - verify configuration status
     if (testMode) {
-      console.log('Slack test mode - configuration verified');
+      const isConfigured = !!webhookUrl;
+      console.log('Slack test mode - configured:', isConfigured);
       return new Response(JSON.stringify({
         success: true,
-        message: 'Slack webhook configured correctly',
+        message: isConfigured ? 'Slack webhook configured correctly' : 'Slack running in mock mode',
         testMode: true,
+        mockMode: !isConfigured,
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
+    // Mock mode - when no webhook URL is configured, log and return success
+    if (!webhookUrl) {
+      const emoji = typeEmojis[type] || 'ℹ️';
+      console.log('[MOCK MODE] Slack notification would be sent:', {
+        type,
+        title: `${emoji} ${title}`,
+        message,
+        severity,
+        fields,
+      });
+      return new Response(JSON.stringify({
+        success: true,
+        message: 'Slack notification logged (mock mode - no webhook URL)',
+        mockMode: true,
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });

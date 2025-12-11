@@ -20,7 +20,7 @@ import { useIntegrations } from '@/contexts/IntegrationsContext';
 import { CONTROL_CENTER_INTEGRATIONS, CONTROL_CENTER_APP } from '@/types/credentials';
 
 const Integrations = () => {
-  const { integrations, removeIntegrationFromApp, addIntegrationForApp } = useIntegrations();
+  const { integrations, removeIntegrationFromApp, addIntegrationForApp, activateIntegration } = useIntegrations();
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -36,7 +36,9 @@ const Integrations = () => {
 
   const handleSetupComplete = (credentials: Record<string, string>) => {
     console.log('Integration setup complete:', selectedIntegrationId, credentials);
-    // In a real app, this would update the integration status to 'active'
+    if (selectedIntegrationId) {
+      activateIntegration(selectedIntegrationId);
+    }
     setSetupDialogOpen(false);
     setSelectedIntegrationId(null);
   };
@@ -224,6 +226,7 @@ const Integrations = () => {
                     key={integration.id}
                     integration={integration}
                     onRemoveApp={(siteId) => removeIntegrationFromApp(integration.id, siteId)}
+                    onConnect={() => handleConnectCC(integration.id)}
                     onConfigure={() => handleConfigureIntegration(integration.id)}
                     animationDelay={(catIndex * 3 + index) * 50}
                   />
