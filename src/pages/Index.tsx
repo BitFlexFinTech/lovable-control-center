@@ -14,9 +14,10 @@ import {
 } from '@/components/dashboard/MonitoringWidgets';
 import { 
   RealTimeIndicator, 
-  RealTimeActivityFeed, 
   LiveMetrics 
 } from '@/components/dashboard/RealTimeIndicator';
+import { LiveActivityFeed } from '@/components/dashboard/LiveActivityFeed';
+import { OnlineAdmins } from '@/components/dashboard/OnlineAdmins';
 import {
   SiteAnalyticsCardSkeleton,
   MonitoringWidgetSkeleton,
@@ -207,7 +208,7 @@ const Index = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                <RealTimeActivityFeed />
+                <LiveActivityFeed />
               </CardContent>
             </Card>
           </>

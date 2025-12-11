@@ -1,45 +1,36 @@
-import { Shield, Users, Eye, Edit, Trash2, Plus } from 'lucide-react';
+import { Shield, Users, Plus } from 'lucide-react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { PermissionMatrixEditor } from '@/components/roles/PermissionMatrixEditor';
+import { PermissionGate } from '@/components/permissions/PermissionGate';
+import { useUserRoles } from '@/hooks/useSupabaseQuery';
+import { usePermissions } from '@/hooks/usePermissions';
 import { cn } from '@/lib/utils';
 
-const roles = [
-  {
-    id: 'owner',
-    name: 'Owner',
-    description: 'Full access to all tenants, sites, and settings',
-    color: 'active',
-    permissions: ['read', 'write', 'delete', 'admin', 'billing'],
-    userCount: 1,
-  },
-  {
-    id: 'admin',
-    name: 'Admin',
-    description: 'Manage assigned tenants and their sites',
-    color: 'default',
-    permissions: ['read', 'write', 'delete', 'admin'],
-    userCount: 1,
-  },
-  {
-    id: 'editor',
-    name: 'Editor',
-    description: 'Content-only access to assigned sites',
-    color: 'muted',
-    permissions: ['read', 'write'],
-    userCount: 1,
-  },
-];
-
-const allPermissions = [
-  { key: 'read', label: 'Read', icon: Eye },
-  { key: 'write', label: 'Write', icon: Edit },
-  { key: 'delete', label: 'Delete', icon: Trash2 },
-  { key: 'admin', label: 'Admin', icon: Shield },
-  { key: 'billing', label: 'Billing', icon: Users },
-];
+const ROLE_DISPLAY = {
+  super_admin: { name: 'Super Admin', description: 'Full access to all tenants, sites, and settings', color: 'active' },
+  admin: { name: 'Admin', description: 'Manage assigned tenants and their sites', color: 'default' },
+  editor: { name: 'Editor', description: 'Content-only access to assigned sites', color: 'muted' },
+};
 
 const Roles = () => {
+  const { data: userRoles = [], isLoading } = useUserRoles();
+  const { isSuperAdmin } = usePermissions();
+
+  // Count users per role
+  const roleCounts = userRoles.reduce((acc, ur) => {
+    acc[ur.role] = (acc[ur.role] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const roles = Object.entries(ROLE_DISPLAY).map(([key, value]) => ({
+    id: key,
+    ...value,
+    userCount: roleCounts[key] || 0,
+  }));
+
   return (
     <DashboardLayout>
       {/* Page Header */}
@@ -51,15 +42,17 @@ const Roles = () => {
               Configure role-based access control for your organization
             </p>
           </div>
-          <Button size="sm" className="gap-1.5">
-            <Plus className="h-3.5 w-3.5" />
-            Create Role
-          </Button>
+          <PermissionGate feature="roles" action="create">
+            <Button size="sm" className="gap-1.5">
+              <Plus className="h-3.5 w-3.5" />
+              Create Role
+            </Button>
+          </PermissionGate>
         </div>
       </div>
 
       {/* Roles Grid */}
-      <div className="grid gap-4">
+      <div className="grid gap-4 mb-8">
         {roles.map((role, index) => (
           <div 
             key={role.id}
@@ -82,31 +75,21 @@ const Roles = () => {
                 </div>
               </div>
               <Badge variant="muted">
+                <Users className="h-3 w-3 mr-1" />
                 {role.userCount} user{role.userCount !== 1 ? 's' : ''}
               </Badge>
             </div>
-
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-sm text-muted-foreground mr-2">Permissions:</span>
-              {allPermissions.map((perm) => {
-                const hasPermission = role.permissions.includes(perm.key);
-                return (
-                  <Badge
-                    key={perm.key}
-                    variant={hasPermission ? 'secondary' : 'outline'}
-                    className={cn(
-                      "gap-1",
-                      !hasPermission && "opacity-40"
-                    )}
-                  >
-                    <perm.icon className="h-3 w-3" />
-                    {perm.label}
-                  </Badge>
-                );
-              })}
-            </div>
           </div>
         ))}
+      </div>
+
+      {/* Permission Matrix Editor */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-medium text-muted-foreground">Permission Matrix</span>
+          <Separator className="flex-1" />
+        </div>
+        <PermissionMatrixEditor />
       </div>
     </DashboardLayout>
   );

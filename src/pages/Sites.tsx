@@ -41,6 +41,7 @@ import { SubscriptionUpgradeDialog } from '@/components/sites/SubscriptionUpgrad
 import { AnalyticsComparisonView } from '@/components/sites/AnalyticsComparisonView';
 import { MultiSiteBuilderDialog } from '@/components/sites/MultiSiteBuilderDialog';
 import { SEOManagerDialog } from '@/components/sites/SEOManagerDialog';
+import { PermissionGate } from '@/components/permissions/PermissionGate';
 import { usePasswordManager } from '@/contexts/PasswordManagerContext';
 import { useToast } from '@/hooks/use-toast';
 import { SiteOwnerType, SubscriptionTier } from '@/types/billing';
@@ -183,12 +184,14 @@ const Sites = () => {
               )}
               <DropdownMenuItem className="gap-2" onClick={() => handleSEOManager(site)}><SearchIcon className="h-4 w-4" />SEO Manager</DropdownMenuItem>
               <DropdownMenuSeparator />
-              {site.ownerType === 'admin' && (
-                <DropdownMenuItem className="gap-2 text-primary" onClick={() => handleTransfer(site)}><ArrowRight className="h-4 w-4" />Transfer to Customer</DropdownMenuItem>
-              )}
-              {isDemo && (
-                <DropdownMenuItem className="gap-2 text-status-active" onClick={() => handleGoLive(site)}><Rocket className="h-4 w-4" />Go Live</DropdownMenuItem>
-              )}
+              <PermissionGate feature="sites" action="update">
+                {site.ownerType === 'admin' && (
+                  <DropdownMenuItem className="gap-2 text-primary" onClick={() => handleTransfer(site)}><ArrowRight className="h-4 w-4" />Transfer to Customer</DropdownMenuItem>
+                )}
+                {isDemo && (
+                  <DropdownMenuItem className="gap-2 text-status-active" onClick={() => handleGoLive(site)}><Rocket className="h-4 w-4" />Go Live</DropdownMenuItem>
+                )}
+              </PermissionGate>
             </DropdownMenuContent>
           </DropdownMenu>
         </TableCell>
@@ -206,21 +209,23 @@ const Sites = () => {
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" className="gap-1.5"><RefreshCw className="h-3.5 w-3.5" />Health Check</Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button size="sm" className="gap-1.5">
-                  <Globe className="h-3.5 w-3.5" />Create Site<ChevronDown className="h-3 w-3 ml-1" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => setIsCreateSiteOpen(true)} className="gap-2">
-                  <Globe className="h-4 w-4" />Single Site
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setIsMultiSiteOpen(true)} className="gap-2">
-                  <Layers className="h-4 w-4" />Multi-Site Builder
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <PermissionGate feature="sites" action="create">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="sm" className="gap-1.5">
+                    <Globe className="h-3.5 w-3.5" />Create Site<ChevronDown className="h-3 w-3 ml-1" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setIsCreateSiteOpen(true)} className="gap-2">
+                    <Globe className="h-4 w-4" />Single Site
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setIsMultiSiteOpen(true)} className="gap-2">
+                    <Layers className="h-4 w-4" />Multi-Site Builder
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </PermissionGate>
           </div>
         </div>
       </div>
