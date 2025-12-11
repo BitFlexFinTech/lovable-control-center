@@ -8,7 +8,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
-import { Loader2, Mail, Lock, User, ArrowRight } from 'lucide-react';
+import { Loader2, Mail, Lock, User, ArrowRight, Zap } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -23,6 +24,7 @@ const signupSchema = z.object({
 
 const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
+  const [isGodModeLoading, setIsGodModeLoading] = useState(false);
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [signupEmail, setSignupEmail] = useState('');
@@ -33,6 +35,38 @@ const Auth = () => {
   const { signIn, signUp, user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // GodMode: One-click Super Admin login
+  const handleGodMode = async () => {
+    setIsGodModeLoading(true);
+    // Use a pre-configured super admin account
+    const { error } = await signIn('admin@controlcenter.io', 'SuperAdmin123!');
+    setIsGodModeLoading(false);
+
+    if (error) {
+      // If account doesn't exist, create it first
+      const signUpResult = await signUp('admin@controlcenter.io', 'SuperAdmin123!', 'Super Admin');
+      if (signUpResult.error) {
+        toast({
+          title: 'GodMode Failed',
+          description: 'Could not create or access Super Admin account. Try regular login.',
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: '⚡ GodMode Activated',
+          description: 'Super Admin account created. Welcome, God.',
+        });
+        navigate('/');
+      }
+    } else {
+      toast({
+        title: '⚡ GodMode Activated',
+        description: 'Welcome back, Super Admin.',
+      });
+      navigate('/');
+    }
+  };
 
   useEffect(() => {
     if (user) {
@@ -139,6 +173,30 @@ const Auth = () => {
           </CardDescription>
         </CardHeader>
         
+        {/* GodMode Button */}
+        <div className="px-6 pb-4">
+          <Button 
+            variant="outline" 
+            className="w-full border-primary/50 bg-primary/5 hover:bg-primary/10 hover:border-primary text-primary font-semibold gap-2"
+            onClick={handleGodMode}
+            disabled={isGodModeLoading || isLoading}
+          >
+            {isGodModeLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Zap className="h-4 w-4" />
+            )}
+            GodMode
+          </Button>
+          <p className="text-xs text-center text-muted-foreground mt-2">
+            One-click Super Admin access
+          </p>
+        </div>
+
+        <div className="px-6">
+          <Separator className="mb-4" />
+        </div>
+
         <Tabs defaultValue="login" className="w-full">
           <TabsList className="grid w-full grid-cols-2 mx-6 max-w-[calc(100%-3rem)]">
             <TabsTrigger value="login">Log In</TabsTrigger>
