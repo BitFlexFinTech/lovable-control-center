@@ -14,6 +14,7 @@ import { NotificationProvider } from "@/contexts/NotificationContext";
 import { HealthMonitorProvider } from "@/contexts/HealthMonitorContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ImpersonationProvider } from "@/contexts/ImpersonationContext";
+import { AnalyticsProvider } from "@/contexts/AnalyticsContext";
 import { TourOverlay } from "@/components/tour/TourOverlay";
 import { CommandPalette } from "@/components/layout/CommandPalette";
 import { KeyboardShortcutsProvider } from "@/components/layout/KeyboardShortcutsProvider";
@@ -55,10 +56,11 @@ const App = () => (
                   <TwoFactorProvider>
                     <NotificationProvider>
                       <HealthMonitorProvider>
-                        <TourProvider>
-                          <Toaster />
-                          <Sonner />
-                          <TourOverlay />
+                        <AnalyticsProvider>
+                          <TourProvider>
+                            <Toaster />
+                            <Sonner />
+                            <TourOverlay />
                           <BrowserRouter>
                             <KeyboardShortcutsProvider>
                               <CommandPalette />
@@ -128,7 +130,8 @@ const App = () => (
                               </Routes>
                             </KeyboardShortcutsProvider>
                           </BrowserRouter>
-                        </TourProvider>
+                          </TourProvider>
+                        </AnalyticsProvider>
                       </HealthMonitorProvider>
                     </NotificationProvider>
                   </TwoFactorProvider>

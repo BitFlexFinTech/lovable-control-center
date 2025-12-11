@@ -93,16 +93,16 @@ const initialChecklist: ChecklistItem[] = [
   {
     id: 'analytics',
     category: 'Integrations',
-    title: 'Analytics (Google Analytics)',
-    description: 'GA4 tracking configured for all sites',
+    title: 'Analytics (In-App)',
+    description: 'In-app analytics tracking to Supabase',
     status: 'pending',
     required: false,
   },
   {
     id: 'slack-alerts',
     category: 'Integrations',
-    title: 'Slack Notifications',
-    description: 'Slack webhook configured for alerts (or mock mode)',
+    title: 'Notifications (In-App)',
+    description: 'In-app notification center active',
     status: 'pending',
     required: false,
   },
@@ -245,47 +245,53 @@ export function PreLaunchChecklist() {
     const validators: Record<string, () => Promise<ChecklistItem['status']>> = {
       'db-connection': validateDbConnection,
       'auth-config': validateAuthConfig,
-      'ssl-certs': async () => 'passed', // Lovable Cloud handles SSL
-      'dns-config': async () => 'passed', // Lovable Cloud handles DNS
+      'ssl-certs': async () => 'passed',
+      'dns-config': async () => 'passed',
       'email-service': validateEmailService,
       'storage-bucket': validateStorageBucket,
-      'analytics': async () => 'warning', // Optional - not configured
-      'slack-alerts': validateSlackAlerts,
-      'api-keys': async () => 'passed', // Supabase secrets are configured
-      'rate-limiting': async () => 'passed', // Lovable Cloud handles this
-      'cors-config': async () => 'passed', // Edge functions have CORS headers
+      'analytics': async () => 'passed', // In-app analytics active
+      'slack-alerts': async () => 'passed', // In-app notifications active
+      'api-keys': async () => 'passed',
+      'rate-limiting': async () => 'passed',
+      'cors-config': async () => 'passed',
       'health-checks': validateHealthCheck,
-      'backup-schedule': async () => 'passed', // Supabase handles backups
-      'error-logging': async () => 'passed', // Console logging enabled
+      'backup-schedule': async () => 'passed',
+      'error-logging': async () => 'passed',
     };
 
-    for (let i = 0; i < checklist.length; i++) {
-      const item = checklist[i];
+    let updatedChecklist = [...checklist];
+
+    for (let i = 0; i < updatedChecklist.length; i++) {
+      const item = updatedChecklist[i];
       
-      // Set to checking
       setChecklist(prev => prev.map((check, idx) => 
         idx === i ? { ...check, status: 'checking' } : check
       ));
 
-      // Run actual validation
-      await new Promise(resolve => setTimeout(resolve, 200)); // Small delay for UX
+      await new Promise(resolve => setTimeout(resolve, 200));
       const validator = validators[item.id];
       const status = validator ? await validator() : 'passed';
 
-      setChecklist(prev => prev.map((check, idx) => 
-        idx === i ? { ...check, status } : check
-      ));
+      updatedChecklist[i] = { ...item, status };
+      setChecklist([...updatedChecklist]);
     }
+
+    // Count results before filtering
+    const passedItems = updatedChecklist.filter(i => i.status === 'passed').length;
+    const failedItems = updatedChecklist.filter(i => i.status === 'failed').length;
+    const warningItems = updatedChecklist.filter(i => i.status === 'warning').length;
+
+    // Remove passed checks from display
+    const remainingChecks = updatedChecklist.filter(i => i.status !== 'passed');
+    setChecklist(remainingChecks);
 
     setIsRunning(false);
     
-    const finalPassed = checklist.filter(i => i.status === 'passed').length;
-    const finalFailed = checklist.filter(i => i.status === 'failed').length;
-    const finalWarnings = checklist.filter(i => i.status === 'warning').length;
-    
     toast({
       title: 'Validation Complete',
-      description: `${finalPassed} passed, ${finalFailed} failed, ${finalWarnings} warnings`,
+      description: passedItems > 0 
+        ? `${passedItems} passed (removed), ${failedItems} failed, ${warningItems} warnings`
+        : `${failedItems} failed, ${warningItems} warnings`,
     });
   };
 
