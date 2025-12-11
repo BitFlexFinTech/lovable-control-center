@@ -28,6 +28,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { users, tenants, sites } from '@/data/seed-data';
+import { PermissionGate } from '@/components/permissions/PermissionGate';
 import { cn } from '@/lib/utils';
 
 const roleColors = {
@@ -115,10 +116,12 @@ const Users = () => {
               Manage user access across Control Center and Apps
             </p>
           </div>
-          <Button size="sm" className="gap-1.5">
-            <Plus className="h-3.5 w-3.5" />
-            Invite User
-          </Button>
+          <PermissionGate feature="users" action="create">
+            <Button size="sm" className="gap-1.5">
+              <Plus className="h-3.5 w-3.5" />
+              Invite User
+            </Button>
+          </PermissionGate>
         </div>
       </div>
 
@@ -267,14 +270,18 @@ const Users = () => {
                             <Mail className="h-4 w-4" />
                             Send Message
                           </DropdownMenuItem>
-                          <DropdownMenuItem className="gap-2">
-                            <Shield className="h-4 w-4" />
-                            Edit Permissions
-                          </DropdownMenuItem>
+                          <PermissionGate feature="roles" action="update">
+                            <DropdownMenuItem className="gap-2">
+                              <Shield className="h-4 w-4" />
+                              Edit Permissions
+                            </DropdownMenuItem>
+                          </PermissionGate>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem className="gap-2 text-destructive">
-                            Remove User
-                          </DropdownMenuItem>
+                          <PermissionGate feature="users" action="delete">
+                            <DropdownMenuItem className="gap-2 text-destructive">
+                              Remove User
+                            </DropdownMenuItem>
+                          </PermissionGate>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -393,14 +400,18 @@ const Users = () => {
                             <Mail className="h-4 w-4" />
                             Send Message
                           </DropdownMenuItem>
-                          <DropdownMenuItem className="gap-2">
-                            <Shield className="h-4 w-4" />
-                            Edit Permissions
-                          </DropdownMenuItem>
+                          <PermissionGate feature="roles" action="update">
+                            <DropdownMenuItem className="gap-2">
+                              <Shield className="h-4 w-4" />
+                              Edit Permissions
+                            </DropdownMenuItem>
+                          </PermissionGate>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem className="gap-2 text-destructive">
-                            Remove User
-                          </DropdownMenuItem>
+                          <PermissionGate feature="users" action="delete">
+                            <DropdownMenuItem className="gap-2 text-destructive">
+                              Remove User
+                            </DropdownMenuItem>
+                          </PermissionGate>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>

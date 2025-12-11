@@ -17,7 +17,7 @@ import {
   RefreshCw,
   Moon,
   Sun,
-  Search,
+  Loader2,
 } from 'lucide-react';
 import {
   CommandDialog,
@@ -30,7 +30,7 @@ import {
 } from '@/components/ui/command';
 import { useTheme } from 'next-themes';
 import { useToast } from '@/hooks/use-toast';
-import { sites } from '@/data/seed-data';
+import { useFuzzySearch } from '@/hooks/useFuzzySearch';
 
 const navigationItems = [
   { icon: LayoutDashboard, label: 'Overview', path: '/', keywords: 'dashboard home' },
@@ -49,9 +49,13 @@ const navigationItems = [
 
 export function CommandPalette() {
   const [open, setOpen] = React.useState(false);
+  const [search, setSearch] = React.useState('');
   const navigate = useNavigate();
   const { setTheme, theme } = useTheme();
   const { toast } = useToast();
+  
+  // Fuzzy search from Supabase
+  const searchResults = useFuzzySearch(search);
 
   React.useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -67,14 +71,41 @@ export function CommandPalette() {
 
   const runCommand = React.useCallback((command: () => void) => {
     setOpen(false);
+    setSearch('');
     command();
   }, []);
 
   return (
     <CommandDialog open={open} onOpenChange={setOpen}>
-      <CommandInput placeholder="Type a command or search..." />
+      <CommandInput 
+        placeholder="Type a command or search..." 
+        value={search}
+        onValueChange={setSearch}
+      />
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
+        
+        {/* Search Results from Supabase */}
+        {search.length > 0 && searchResults.length > 0 && (
+          <>
+            <CommandGroup heading="Search Results">
+              {searchResults.map((result) => (
+                <CommandItem
+                  key={`${result.type}-${result.id}`}
+                  value={`search ${result.title} ${result.subtitle}`}
+                  onSelect={() => runCommand(() => navigate(result.path))}
+                >
+                  {result.type === 'site' && <Globe className="mr-2 h-4 w-4" />}
+                  {result.type === 'tenant' && <Building2 className="mr-2 h-4 w-4" />}
+                  {result.type === 'user' && <Users className="mr-2 h-4 w-4" />}
+                  <span>{result.title}</span>
+                  <span className="ml-2 text-xs text-muted-foreground">{result.subtitle}</span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+            <CommandSeparator />
+          </>
+        )}
         
         <CommandGroup heading="Navigation">
           {navigationItems.map((item) => (
@@ -85,22 +116,6 @@ export function CommandPalette() {
             >
               <item.icon className="mr-2 h-4 w-4" />
               {item.label}
-            </CommandItem>
-          ))}
-        </CommandGroup>
-        
-        <CommandSeparator />
-        
-        <CommandGroup heading="Sites">
-          {sites.slice(0, 5).map((site) => (
-            <CommandItem
-              key={site.id}
-              value={`site ${site.name} ${site.domain}`}
-              onSelect={() => runCommand(() => navigate(`/sites`))}
-            >
-              <Globe className="mr-2 h-4 w-4" />
-              {site.name}
-              <span className="ml-2 text-xs text-muted-foreground">{site.domain}</span>
             </CommandItem>
           ))}
         </CommandGroup>

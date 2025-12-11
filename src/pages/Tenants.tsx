@@ -21,6 +21,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { PermissionGate } from '@/components/permissions/PermissionGate';
 import { CreateTenantDialog } from '@/components/tenants/CreateTenantDialog';
 import { TenantSettingsDialog } from '@/components/tenants/TenantSettingsDialog';
 import { TenantStatsCard } from '@/components/tenants/TenantStatsCard';
@@ -108,9 +109,11 @@ const Tenants = () => {
             <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isFetching} className="gap-1.5">
               <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? 'animate-spin' : ''}`} />Refresh
             </Button>
-            <Button size="sm" className="gap-1.5" onClick={() => setIsCreateOpen(true)}>
-              <Plus className="h-3.5 w-3.5" />Add Tenant
-            </Button>
+            <PermissionGate feature="tenants" action="create">
+              <Button size="sm" className="gap-1.5" onClick={() => setIsCreateOpen(true)}>
+                <Plus className="h-3.5 w-3.5" />Add Tenant
+              </Button>
+            </PermissionGate>
           </div>
         </div>
       </div>
@@ -149,9 +152,11 @@ const Tenants = () => {
                       <DropdownMenuTrigger asChild><Button variant="ghost" size="icon-sm"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-48">
                         <DropdownMenuItem className="gap-2" onClick={() => handleOpenAdmin(tenant)}><ExternalLink className="h-4 w-4" />Open Admin</DropdownMenuItem>
-                        <DropdownMenuItem className="gap-2" onClick={() => handleOpenSettings(tenant)}><Settings className="h-4 w-4" />Edit Settings</DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem className="gap-2 text-status-warning" onClick={() => handleDisableTenant(tenant)}><Power className="h-4 w-4" />Disable</DropdownMenuItem>
+                        <PermissionGate feature="tenants" action="update">
+                          <DropdownMenuItem className="gap-2" onClick={() => handleOpenSettings(tenant)}><Settings className="h-4 w-4" />Edit Settings</DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem className="gap-2 text-status-warning" onClick={() => handleDisableTenant(tenant)}><Power className="h-4 w-4" />Disable</DropdownMenuItem>
+                        </PermissionGate>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>

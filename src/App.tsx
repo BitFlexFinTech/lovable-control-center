@@ -13,6 +13,7 @@ import { TourProvider } from "@/contexts/TourContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import { HealthMonitorProvider } from "@/contexts/HealthMonitorContext";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { ImpersonationProvider } from "@/contexts/ImpersonationContext";
 import { TourOverlay } from "@/components/tour/TourOverlay";
 import { CommandPalette } from "@/components/layout/CommandPalette";
 import { KeyboardShortcutsProvider } from "@/components/layout/KeyboardShortcutsProvider";
@@ -46,7 +47,8 @@ const App = () => (
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
       <TooltipProvider>
         <AuthProvider>
-          <TenantProvider>
+          <ImpersonationProvider>
+            <TenantProvider>
             <CartProvider>
               <IntegrationsProvider>
                 <PasswordManagerProvider>
@@ -133,7 +135,8 @@ const App = () => (
                 </PasswordManagerProvider>
               </IntegrationsProvider>
             </CartProvider>
-          </TenantProvider>
+            </TenantProvider>
+          </ImpersonationProvider>
         </AuthProvider>
       </TooltipProvider>
     </ThemeProvider>
