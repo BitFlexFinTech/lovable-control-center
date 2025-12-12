@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Tenant } from '@/types';
 import { Plus, MoreHorizontal, ExternalLink, Settings, Power, Search, LayoutGrid, List, RefreshCw } from 'lucide-react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
@@ -85,14 +86,14 @@ const Tenants = () => {
     });
   };
 
-  const handleUpdateTenant = (updatedTenant: Tenant) => {};
+  const handleUpdateTenant = (updatedTenant: SupabaseTenant) => {};
 
   const handleDeleteTenant = async (tenantId: string) => {
     await deleteTenantMutation.mutateAsync(tenantId);
     setDeleteConfirmTenant(null);
   };
 
-  const handleOpenSettings = (tenant: Tenant) => { setSelectedTenant(tenant); setIsSettingsOpen(true); };
+  const handleOpenSettings = (tenant: SupabaseTenant) => { setSelectedTenant(tenant); setIsSettingsOpen(true); };
   const handleDisableTenant = (tenant: Tenant) => { toast({ title: 'Tenant Disabled', description: `${tenant.name} has been disabled.` }); };
   const handleOpenAdmin = (tenant: Tenant) => { window.open(tenant.adminUrl, '_blank'); };
   const handleRefresh = async () => { await refetch(); toast({ title: 'Tenants Refreshed' }); };
@@ -153,7 +154,10 @@ const Tenants = () => {
                       <DropdownMenuContent align="end" className="w-48">
                         <DropdownMenuItem className="gap-2" onClick={() => handleOpenAdmin(tenant)}><ExternalLink className="h-4 w-4" />Open Admin</DropdownMenuItem>
                         <PermissionGate feature="tenants" action="update">
-                          <DropdownMenuItem className="gap-2" onClick={() => handleOpenSettings(tenant)}><Settings className="h-4 w-4" />Edit Settings</DropdownMenuItem>
+                          <DropdownMenuItem className="gap-2" onClick={() => {
+                            const supabaseTenant = tenantsData.find(t => t.id === tenant.id);
+                            if (supabaseTenant) handleOpenSettings(supabaseTenant);
+                          }}><Settings className="h-4 w-4" />Edit Settings</DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem className="gap-2 text-status-warning" onClick={() => handleDisableTenant(tenant)}><Power className="h-4 w-4" />Disable</DropdownMenuItem>
                         </PermissionGate>
