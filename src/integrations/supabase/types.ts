@@ -118,6 +118,122 @@ export type Database = {
           },
         ]
       }
+      credentials: {
+        Row: {
+          additional_fields: Json | null
+          created_at: string | null
+          email: string
+          id: string
+          integration_id: string
+          password: string
+          site_id: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          additional_fields?: Json | null
+          created_at?: string | null
+          email: string
+          id?: string
+          integration_id: string
+          password: string
+          site_id: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          additional_fields?: Json | null
+          created_at?: string | null
+          email?: string
+          id?: string
+          integration_id?: string
+          password?: string
+          site_id?: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credentials_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "integrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credentials_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      imported_apps: {
+        Row: {
+          id: string
+          imported_at: string | null
+          lovable_url: string
+          project_name: string
+          site_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          imported_at?: string | null
+          lovable_url: string
+          project_name: string
+          site_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          imported_at?: string | null
+          lovable_url?: string
+          project_name?: string
+          site_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "imported_apps_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      integrations: {
+        Row: {
+          category: string
+          created_at: string | null
+          description: string | null
+          icon: string | null
+          id: string
+          name: string
+          status: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          description?: string | null
+          icon?: string | null
+          id: string
+          name: string
+          status?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name?: string
+          status?: string | null
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           action_url: string | null
@@ -217,12 +333,56 @@ export type Database = {
         }
         Relationships: []
       }
+      site_integrations: {
+        Row: {
+          config: Json | null
+          created_at: string | null
+          id: string
+          integration_id: string
+          site_id: string
+          status: string | null
+        }
+        Insert: {
+          config?: Json | null
+          created_at?: string | null
+          id?: string
+          integration_id: string
+          site_id: string
+          status?: string | null
+        }
+        Update: {
+          config?: Json | null
+          created_at?: string | null
+          id?: string
+          integration_id?: string
+          site_id?: string
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "site_integrations_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "integrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_integrations_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sites: {
         Row: {
+          app_color: string | null
           created_at: string
           domain: string | null
           health_status: string | null
           id: string
+          lovable_url: string | null
           name: string
           owner_type: string | null
           response_time_ms: number | null
@@ -233,10 +393,12 @@ export type Database = {
           uptime_percentage: number | null
         }
         Insert: {
+          app_color?: string | null
           created_at?: string
           domain?: string | null
           health_status?: string | null
           id?: string
+          lovable_url?: string | null
           name: string
           owner_type?: string | null
           response_time_ms?: number | null
@@ -247,10 +409,12 @@ export type Database = {
           uptime_percentage?: number | null
         }
         Update: {
+          app_color?: string | null
           created_at?: string
           domain?: string | null
           health_status?: string | null
           id?: string
+          lovable_url?: string | null
           name?: string
           owner_type?: string | null
           response_time_ms?: number | null

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
 import { SiteHealth, HealthStatus } from '@/types/monitoring';
-import { sites } from '@/data/seed-data';
+import { supabase } from '@/integrations/supabase/client';
 
 interface HealthMonitorContextType {
   siteHealths: SiteHealth[];
@@ -15,33 +15,23 @@ interface HealthMonitorContextType {
 
 const HealthMonitorContext = createContext<HealthMonitorContextType | undefined>(undefined);
 
-// Generate mock health data
-const generateHealthStatus = (): HealthStatus => {
-  const random = Math.random();
-  const status: HealthStatus['status'] = random > 0.9 ? 'down' : random > 0.8 ? 'degraded' : 'healthy';
+// Generate health status from site data
+const generateHealthStatus = (site: any): HealthStatus => {
+  const status = site.health_status === 'healthy' ? 'healthy' : 
+                 site.health_status === 'degraded' ? 'degraded' : 'down';
   
   return {
     status,
-    uptime: status === 'down' ? 0 : 95 + Math.random() * 5,
-    responseTime: status === 'down' ? 0 : 50 + Math.random() * 200,
+    uptime: site.uptime_percentage || 99.9,
+    responseTime: site.response_time_ms || 150,
     lastCheck: new Date().toISOString(),
-    sslValid: Math.random() > 0.1,
-    sslExpiresAt: new Date(Date.now() + Math.random() * 90 * 24 * 60 * 60 * 1000).toISOString(),
+    sslValid: site.ssl_status === 'valid',
+    sslExpiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(),
   };
 };
 
-const generateInitialHealths = (): SiteHealth[] => {
-  return sites.map(site => ({
-    siteId: site.id,
-    siteName: site.name,
-    domain: site.domain,
-    health: generateHealthStatus(),
-    alerts: [],
-  }));
-};
-
 export function HealthMonitorProvider({ children }: { children: ReactNode }) {
-  const [siteHealths, setSiteHealths] = useState<SiteHealth[]>(generateInitialHealths);
+  const [siteHealths, setSiteHealths] = useState<SiteHealth[]>([]);
   const [isMonitoring, setIsMonitoring] = useState(true);
   const [lastUpdate, setLastUpdate] = useState<string | null>(new Date().toISOString());
 
@@ -51,47 +41,43 @@ export function HealthMonitorProvider({ children }: { children: ReactNode }) {
       ? 'degraded' 
       : 'healthy';
 
-  const refreshHealth = useCallback(async (siteId?: string) => {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    if (siteId) {
-      setSiteHealths(prev => prev.map(h => 
-        h.siteId === siteId 
-          ? { ...h, health: generateHealthStatus() }
-          : h
-      ));
-    } else {
-      setSiteHealths(prev => prev.map(h => ({
-        ...h,
-        health: generateHealthStatus(),
-      })));
+  const fetchSiteHealths = useCallback(async () => {
+    const { data: sites } = await supabase.from('sites').select('*');
+    if (sites) {
+      const healths: SiteHealth[] = sites.map(site => ({
+        siteId: site.id,
+        siteName: site.name,
+        domain: site.domain,
+        health: generateHealthStatus(site),
+        alerts: [],
+      }));
+      setSiteHealths(healths);
+      setLastUpdate(new Date().toISOString());
     }
-    setLastUpdate(new Date().toISOString());
   }, []);
 
-  const startMonitoring = useCallback(() => {
-    setIsMonitoring(true);
-  }, []);
+  const refreshHealth = useCallback(async (siteId?: string) => {
+    await fetchSiteHealths();
+  }, [fetchSiteHealths]);
 
-  const stopMonitoring = useCallback(() => {
-    setIsMonitoring(false);
-  }, []);
+  const startMonitoring = useCallback(() => setIsMonitoring(true), []);
+  const stopMonitoring = useCallback(() => setIsMonitoring(false), []);
 
   const getHealthForSite = useCallback((siteId: string) => {
     return siteHealths.find(h => h.siteId === siteId);
   }, [siteHealths]);
 
+  // Initial fetch
+  useEffect(() => {
+    fetchSiteHealths();
+  }, [fetchSiteHealths]);
+
   // Auto-refresh every 30 seconds when monitoring
   useEffect(() => {
     if (!isMonitoring) return;
-
-    const interval = setInterval(() => {
-      refreshHealth();
-    }, 30000);
-
+    const interval = setInterval(fetchSiteHealths, 30000);
     return () => clearInterval(interval);
-  }, [isMonitoring, refreshHealth]);
+  }, [isMonitoring, fetchSiteHealths]);
 
   return (
     <HealthMonitorContext.Provider

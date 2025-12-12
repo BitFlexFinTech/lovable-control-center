@@ -1,39 +1,64 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { sites as mockSites } from '@/data/seed-data';
+import { supabase } from '@/integrations/supabase/client';
 import { generateAISuggestions } from '@/utils/aiSuggestionAnalyzer';
-import { Site, AISuggestion } from '@/types';
+import { AISuggestion } from '@/types';
 import { useTenant } from '@/contexts/TenantContext';
 
-// Simulate API calls with mock data
-const fetchSites = async (): Promise<Site[]> => {
-  await new Promise(resolve => setTimeout(resolve, 800));
-  return mockSites;
-};
-
-const fetchSuggestions = async (sites: Site[]): Promise<AISuggestion[]> => {
-  await new Promise(resolve => setTimeout(resolve, 600));
-  return generateAISuggestions(sites);
-};
+export interface DashboardSite {
+  id: string;
+  name: string;
+  domain: string | null;
+  status: string | null;
+  owner_type: string | null;
+  lovable_url: string | null;
+  app_color: string | null;
+  health_status: string | null;
+  uptime_percentage: number | null;
+  response_time_ms: number | null;
+  ssl_status: string | null;
+  tenant_id: string | null;
+  created_at: string;
+}
 
 export function useSites() {
   const { currentTenant } = useTenant();
   
   return useQuery({
     queryKey: ['sites', currentTenant?.id],
-    queryFn: fetchSites,
-    select: (data) => currentTenant 
-      ? data.filter(site => site.tenantId === currentTenant.id)
-      : data,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    queryFn: async () => {
+      let query = supabase.from('sites').select('*').order('created_at', { ascending: false });
+      
+      if (currentTenant?.id) {
+        query = query.eq('tenant_id', currentTenant.id);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      return data as DashboardSite[];
+    },
   });
 }
 
-export function useSuggestions(sites: Site[] = []) {
+export function useSuggestions(sites: DashboardSite[] = []) {
   return useQuery({
     queryKey: ['suggestions', sites.map(s => s.id)],
-    queryFn: () => fetchSuggestions(sites),
+    queryFn: () => {
+      // Generate mock suggestions based on site data
+      const suggestions: AISuggestion[] = sites.slice(0, 3).map(s => ({
+        id: `suggestion-${s.id}`,
+        siteId: s.id,
+        type: 'performance' as const,
+        title: `Optimize ${s.name}`,
+        description: `Improve performance for ${s.name}`,
+        priority: 'medium' as const,
+        expectedImpact: '+15% load speed',
+        targetKPI: 'Performance',
+        category: 'performance' as const,
+      }));
+      return suggestions;
+    },
     enabled: sites.length > 0,
-    staleTime: 1000 * 60 * 10, // 10 minutes
+    staleTime: 1000 * 60 * 10,
   });
 }
 

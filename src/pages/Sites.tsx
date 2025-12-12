@@ -1,36 +1,17 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MoreHorizontal, ExternalLink, Settings, RefreshCw, Search, Filter, Globe, Rocket, ArrowRight, CreditCard, BarChart3, Crown, User, Layers, Search as SearchIcon, ChevronDown } from 'lucide-react';
+import { MoreHorizontal, ExternalLink, Settings, RefreshCw, Search, Globe, Rocket, ArrowRight, CreditCard, BarChart3, Crown, User, Layers, Search as SearchIcon, ChevronDown, Import, Loader2 } from 'lucide-react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { StatusPill } from '@/components/dashboard/StatusPill';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useTenant } from '@/contexts/TenantContext';
-import { sites as initialSites, tenants } from '@/data/seed-data';
+import { useSites } from '@/hooks/useSupabaseSites';
 import { CreateSiteWithDomainDialog } from '@/components/mail/CreateSiteWithDomainDialog';
 import { GoLiveDialog } from '@/components/sites/GoLiveDialog';
 import { ControlCenterCard } from '@/components/sites/ControlCenterCard';
@@ -41,136 +22,89 @@ import { SubscriptionUpgradeDialog } from '@/components/sites/SubscriptionUpgrad
 import { AnalyticsComparisonView } from '@/components/sites/AnalyticsComparisonView';
 import { MultiSiteBuilderDialog } from '@/components/sites/MultiSiteBuilderDialog';
 import { SEOManagerDialog } from '@/components/sites/SEOManagerDialog';
+import { ImportAppDialog } from '@/components/sites/ImportAppDialog';
 import { PermissionGate } from '@/components/permissions/PermissionGate';
-import { usePasswordManager } from '@/contexts/PasswordManagerContext';
 import { useToast } from '@/hooks/use-toast';
 import { SiteOwnerType, SubscriptionTier } from '@/types/billing';
-import { cn } from '@/lib/utils';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const Sites = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { data: sites = [], isLoading, refetch } = useSites();
+  const { currentTenant, allTenants } = useTenant();
+
   const [isCreateSiteOpen, setIsCreateSiteOpen] = useState(false);
   const [isGoLiveOpen, setIsGoLiveOpen] = useState(false);
   const [isTransferOpen, setIsTransferOpen] = useState(false);
   const [isUpgradeOpen, setIsUpgradeOpen] = useState(false);
   const [isMultiSiteOpen, setIsMultiSiteOpen] = useState(false);
   const [isSEOManagerOpen, setIsSEOManagerOpen] = useState(false);
-  const [selectedSite, setSelectedSite] = useState<typeof initialSites[0] | null>(null);
-  const [sites, setSites] = useState(initialSites);
+  const [isImportOpen, setIsImportOpen] = useState(false);
+  const [selectedSite, setSelectedSite] = useState<typeof sites[0] | null>(null);
   const [isControlCenterLive, setIsControlCenterLive] = useState(false);
-  const { currentTenant } = useTenant();
-  const { credentials } = usePasswordManager();
   const [searchQuery, setSearchQuery] = useState('');
   const [ownerFilter, setOwnerFilter] = useState<'all' | SiteOwnerType>('all');
   const [viewMode, setViewMode] = useState<'list' | 'comparison'>('list');
-  const [expandedBilling, setExpandedBilling] = useState<string | null>(null);
 
   const filteredSites = sites
-    .filter(site => currentTenant ? site.tenantId === currentTenant.id : true)
-    .filter(site => site.name.toLowerCase().includes(searchQuery.toLowerCase()) || site.url.toLowerCase().includes(searchQuery.toLowerCase()))
-    .filter(site => ownerFilter === 'all' || site.ownerType === ownerFilter);
+    .filter(site => site.name.toLowerCase().includes(searchQuery.toLowerCase()) || (site.domain?.toLowerCase().includes(searchQuery.toLowerCase())))
+    .filter(site => ownerFilter === 'all' || site.owner_type === ownerFilter);
 
-  const adminSites = filteredSites.filter(s => s.ownerType === 'admin' || !s.ownerType);
-  const customerSites = filteredSites.filter(s => s.ownerType === 'customer');
+  const adminSites = filteredSites.filter(s => s.owner_type === 'admin' || !s.owner_type);
+  const customerSites = filteredSites.filter(s => s.owner_type === 'customer');
 
-  const getTenantName = (tenantId: string) => tenants.find(t => t.id === tenantId)?.name || 'Unknown';
-
-  const handleCreateSite = (siteData: any) => {
-    const newSite = {
-      id: `site-${Date.now()}`,
-      tenantId: currentTenant?.id || 'tenant-1',
-      name: siteData.name,
-      url: siteData.url,
-      status: 'active' as const,
-      dashboards: [],
-      healthCheck: { lastCheck: new Date().toISOString(), status: 'active' as const, responseTime: 150, uptime: 100 },
-      lastSync: new Date().toISOString(),
-      metrics: { traffic: 0, trafficChange: 0, orders: 0, ordersChange: 0 },
-      sparklineData: [0, 0, 0, 0, 0, 0, 0],
-      ownerType: 'admin' as SiteOwnerType,
-    };
-    setSites(prev => [newSite, ...prev]);
+  const getTenantName = (tenantId: string | null) => {
+    if (!tenantId) return 'Unknown';
+    return allTenants.find(t => t.id === tenantId)?.name || 'Unknown';
   };
 
-  const handleGoLive = (site: typeof initialSites[0]) => { setSelectedSite(site); setIsGoLiveOpen(true); };
-  
+  const handleGoLive = (site: typeof sites[0]) => { setSelectedSite(site); setIsGoLiveOpen(true); };
+  const handleTransfer = (site: typeof sites[0]) => { setSelectedSite(site); setIsTransferOpen(true); };
+  const handleUpgrade = (site: typeof sites[0]) => { setSelectedSite(site); setIsUpgradeOpen(true); };
+  const handleSEOManager = (site: typeof sites[0]) => { setSelectedSite(site); setIsSEOManagerOpen(true); };
+
   const handleGoLiveComplete = async () => {
     if (!selectedSite) return;
-    setSites(prev => prev.map(s => s.id === selectedSite.id ? { ...s, demoMode: { isDemo: false, isLive: true, goLiveAt: new Date().toISOString() } } : s));
     toast({ title: 'Site is now live!', description: `${selectedSite.name} has been published.` });
+    refetch();
   };
 
-  const handleTransfer = (site: typeof initialSites[0]) => { setSelectedSite(site); setIsTransferOpen(true); };
-
-  const handleTransferComplete = (customerId: string, tier: SubscriptionTier) => {
-    if (!selectedSite) return;
-    setSites(prev => prev.map(s => s.id === selectedSite.id ? {
-      ...s,
-      ownerType: 'customer' as SiteOwnerType,
-      ownerId: customerId,
-      billing: { subscriptionTier: tier, status: 'active', currentPeriodStart: new Date().toISOString(), currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), monthlyPrice: tier === 'free' ? 0 : tier === 'starter' ? 29 : tier === 'pro' ? 79 : 199 },
-    } : s));
+  const handleTransferComplete = () => {
     toast({ title: 'Transfer initiated', description: 'Invitation sent to customer.' });
-  };
-
-  const handleUpgrade = (site: typeof initialSites[0]) => { setSelectedSite(site); setIsUpgradeOpen(true); };
-
-  const handleSEOManager = (site: typeof initialSites[0]) => { setSelectedSite(site); setIsSEOManagerOpen(true); };
-
-  const handleMultiSiteBuild = (generatedSites: any[]) => {
-    const newSites = generatedSites.map(gs => ({
-      id: gs.id,
-      tenantId: currentTenant?.id || 'tenant-1',
-      name: gs.name,
-      url: `https://${gs.domain}`,
-      domain: gs.domain,
-      status: 'active' as const,
-      dashboards: [],
-      healthCheck: { lastCheck: new Date().toISOString(), status: 'active' as const, responseTime: 150, uptime: 100 },
-      lastSync: new Date().toISOString(),
-      metrics: { traffic: 0, trafficChange: 0, orders: 0, ordersChange: 0 },
-      sparklineData: [0, 0, 0, 0, 0, 0, 0],
-      ownerType: 'admin' as SiteOwnerType,
-      demoMode: { isDemo: true, isLive: false },
-      appColor: gs.theme.primaryColor,
-    }));
-    setSites(prev => [...newSites, ...prev]);
+    refetch();
   };
 
   const handleUpgradeComplete = (newTier: SubscriptionTier) => {
-    if (!selectedSite) return;
-    setSites(prev => prev.map(s => s.id === selectedSite.id && s.billing ? { ...s, billing: { ...s.billing, subscriptionTier: newTier } } : s));
     toast({ title: 'Subscription upgraded', description: `Now on ${newTier} plan.` });
+    refetch();
   };
 
-  const siteCredentials = selectedSite ? credentials.filter(c => c.siteId === selectedSite.id) : [];
-
-  const renderSiteRow = (site: typeof initialSites[0]) => {
-    const isDemo = site.demoMode?.isDemo !== false;
-    const integrationCount = site.integrationCount || site.requiredIntegrations?.length || 0;
+  const renderSiteRow = (site: typeof sites[0]) => {
+    const isDemo = site.status === 'demo' || site.status === 'draft';
+    const statusValue = site.status === 'live' || site.status === 'active' ? 'active' : site.status === 'inactive' ? 'inactive' : 'active';
 
     return (
       <TableRow key={site.id} className="border-border hover:bg-muted/50">
         <TableCell>
           <div className="flex items-center gap-3">
-            {site.appColor && <div className="w-1 h-8 rounded-full" style={{ backgroundColor: site.appColor }} />}
+            {site.app_color && <div className="w-1 h-8 rounded-full" style={{ backgroundColor: site.app_color }} />}
             <div>
               <p className="font-medium">{site.name}</p>
-              <p className="text-sm text-muted-foreground truncate max-w-[200px]">{site.url}</p>
+              <p className="text-sm text-muted-foreground truncate max-w-[200px]">{site.domain || site.lovable_url}</p>
             </div>
           </div>
         </TableCell>
-        <TableCell><SiteOwnerBadge ownerType={site.ownerType || 'admin'} subscriptionTier={site.billing?.subscriptionTier} showTier /></TableCell>
-        <TableCell><span className="text-sm">{getTenantName(site.tenantId)}</span></TableCell>
+        <TableCell><SiteOwnerBadge ownerType={(site.owner_type || 'admin') as SiteOwnerType} showTier /></TableCell>
+        <TableCell><span className="text-sm">{getTenantName(site.tenant_id)}</span></TableCell>
         <TableCell>
           {isDemo ? <Badge className="bg-status-warning/20 text-status-warning border-status-warning/30">Demo</Badge> : <Badge className="bg-status-active/20 text-status-active border-status-active/30">Live</Badge>}
         </TableCell>
-        <TableCell><StatusPill status={site.status} /></TableCell>
-        <TableCell><span className="text-sm text-muted-foreground">{integrationCount} accounts</span></TableCell>
+        <TableCell><StatusPill status={statusValue as 'active' | 'inactive'} /></TableCell>
+        <TableCell><span className="text-sm text-muted-foreground">-</span></TableCell>
         <TableCell>
-          <span className={site.healthCheck.responseTime < 200 ? 'text-status-active' : site.healthCheck.responseTime < 500 ? 'text-status-warning' : 'text-status-inactive'}>
-            {site.healthCheck.responseTime}ms
+          <span className={(site.response_time_ms || 150) < 200 ? 'text-status-active' : (site.response_time_ms || 150) < 500 ? 'text-status-warning' : 'text-status-inactive'}>
+            {site.response_time_ms || 150}ms
           </span>
         </TableCell>
         <TableCell>
@@ -179,13 +113,10 @@ const Sites = () => {
             <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuItem className="gap-2"><ExternalLink className="h-4 w-4" />Open Site</DropdownMenuItem>
               <DropdownMenuItem className="gap-2"><Settings className="h-4 w-4" />Settings</DropdownMenuItem>
-              {site.ownerType === 'customer' && site.billing && (
-                <DropdownMenuItem className="gap-2" onClick={() => handleUpgrade(site)}><CreditCard className="h-4 w-4" />View Billing</DropdownMenuItem>
-              )}
               <DropdownMenuItem className="gap-2" onClick={() => handleSEOManager(site)}><SearchIcon className="h-4 w-4" />SEO Manager</DropdownMenuItem>
               <DropdownMenuSeparator />
               <PermissionGate feature="sites" action="update">
-                {site.ownerType === 'admin' && (
+                {site.owner_type === 'admin' && (
                   <DropdownMenuItem className="gap-2 text-primary" onClick={() => handleTransfer(site)}><ArrowRight className="h-4 w-4" />Transfer to Customer</DropdownMenuItem>
                 )}
                 {isDemo && (
@@ -208,7 +139,7 @@ const Sites = () => {
             <p className="text-muted-foreground mt-1">Monitor and manage all your sites and their health status</p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" className="gap-1.5"><RefreshCw className="h-3.5 w-3.5" />Health Check</Button>
+            <Button variant="outline" size="sm" className="gap-1.5" onClick={() => refetch()}><RefreshCw className="h-3.5 w-3.5" />Refresh</Button>
             <PermissionGate feature="sites" action="create">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -222,6 +153,10 @@ const Sites = () => {
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setIsMultiSiteOpen(true)} className="gap-2">
                     <Layers className="h-4 w-4" />Multi-Site Builder
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setIsImportOpen(true)} className="gap-2">
+                    <Import className="h-4 w-4" />Import from Lovable
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -248,42 +183,65 @@ const Sites = () => {
         </div>
 
         <TabsContent value="list" className="space-y-6">
-          {/* Admin Sites Section */}
-          {adminSites.length > 0 && (
-            <div className="space-y-3">
-              <div className="flex items-center gap-3"><Crown className="h-4 w-4 text-primary" /><span className="text-sm font-medium">Admin Sites</span><Separator className="flex-1" /><Badge variant="secondary" className="bg-primary/10 text-primary">{adminSites.length}</Badge></div>
-              <div className="rounded-xl border border-primary/20 bg-gradient-to-b from-primary/5 to-transparent overflow-hidden">
-                <Table>
-                  <TableHeader><TableRow className="hover:bg-transparent border-border"><TableHead>Site</TableHead><TableHead>Owner</TableHead><TableHead>Tenant</TableHead><TableHead>Mode</TableHead><TableHead>Status</TableHead><TableHead>Integrations</TableHead><TableHead>Health</TableHead><TableHead className="w-[50px]"></TableHead></TableRow></TableHeader>
-                  <TableBody>{adminSites.map(renderSiteRow)}</TableBody>
-                </Table>
-              </div>
+          {isLoading ? (
+            <div className="space-y-4">
+              {[1, 2, 3].map(i => (
+                <Skeleton key={i} className="h-16 w-full rounded-xl" />
+              ))}
             </div>
-          )}
+          ) : (
+            <>
+              {/* Admin Sites Section */}
+              {adminSites.length > 0 && (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3"><Crown className="h-4 w-4 text-primary" /><span className="text-sm font-medium">Admin Sites</span><Separator className="flex-1" /><Badge variant="secondary" className="bg-primary/10 text-primary">{adminSites.length}</Badge></div>
+                  <div className="rounded-xl border border-primary/20 bg-gradient-to-b from-primary/5 to-transparent overflow-hidden">
+                    <Table>
+                      <TableHeader><TableRow className="hover:bg-transparent border-border"><TableHead>Site</TableHead><TableHead>Owner</TableHead><TableHead>Tenant</TableHead><TableHead>Mode</TableHead><TableHead>Status</TableHead><TableHead>Integrations</TableHead><TableHead>Health</TableHead><TableHead className="w-[50px]"></TableHead></TableRow></TableHeader>
+                      <TableBody>{adminSites.map(renderSiteRow)}</TableBody>
+                    </Table>
+                  </div>
+                </div>
+              )}
 
-          {/* Customer Sites Section */}
-          {customerSites.length > 0 && (
-            <div className="space-y-3">
-              <div className="flex items-center gap-3"><User className="h-4 w-4 text-status-active" /><span className="text-sm font-medium">Customer Sites</span><Separator className="flex-1" /><Badge variant="secondary" className="bg-status-active/10 text-status-active">{customerSites.length}</Badge></div>
-              <div className="rounded-xl border border-status-active/20 bg-gradient-to-b from-status-active/5 to-transparent overflow-hidden">
-                <Table>
-                  <TableHeader><TableRow className="hover:bg-transparent border-border"><TableHead>Site</TableHead><TableHead>Owner</TableHead><TableHead>Tenant</TableHead><TableHead>Mode</TableHead><TableHead>Status</TableHead><TableHead>Integrations</TableHead><TableHead>Health</TableHead><TableHead className="w-[50px]"></TableHead></TableRow></TableHeader>
-                  <TableBody>{customerSites.map(renderSiteRow)}</TableBody>
-                </Table>
-              </div>
-              {/* Billing Panels */}
-              <div className="space-y-2 mt-4">{customerSites.filter(s => s.billing).map(site => (<CustomerBillingPanel key={site.id} siteName={site.name} billing={site.billing!} paymentHistory={site.paymentHistory || []} onUpgrade={() => handleUpgrade(site)} />))}</div>
-            </div>
+              {/* Customer Sites Section */}
+              {customerSites.length > 0 && (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3"><User className="h-4 w-4 text-status-active" /><span className="text-sm font-medium">Customer Sites</span><Separator className="flex-1" /><Badge variant="secondary" className="bg-status-active/10 text-status-active">{customerSites.length}</Badge></div>
+                  <div className="rounded-xl border border-status-active/20 bg-gradient-to-b from-status-active/5 to-transparent overflow-hidden">
+                    <Table>
+                      <TableHeader><TableRow className="hover:bg-transparent border-border"><TableHead>Site</TableHead><TableHead>Owner</TableHead><TableHead>Tenant</TableHead><TableHead>Mode</TableHead><TableHead>Status</TableHead><TableHead>Integrations</TableHead><TableHead>Health</TableHead><TableHead className="w-[50px]"></TableHead></TableRow></TableHeader>
+                      <TableBody>{customerSites.map(renderSiteRow)}</TableBody>
+                    </Table>
+                  </div>
+                </div>
+              )}
+
+              {sites.length === 0 && !isLoading && (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Globe className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p className="text-lg font-medium">No sites yet</p>
+                  <p className="text-sm">Create a new site or import an existing Lovable project</p>
+                </div>
+              )}
+            </>
           )}
         </TabsContent>
 
-        <TabsContent value="comparison"><AnalyticsComparisonView sites={filteredSites} /></TabsContent>
+        <TabsContent value="comparison"><div className="text-center py-8 text-muted-foreground">Analytics comparison requires site data</div></TabsContent>
       </Tabs>
 
-      <CreateSiteWithDomainDialog isOpen={isCreateSiteOpen} onClose={() => setIsCreateSiteOpen(false)} onCreate={handleCreateSite} tenantId={currentTenant?.id || 'tenant-1'} />
-      <MultiSiteBuilderDialog isOpen={isMultiSiteOpen} onClose={() => setIsMultiSiteOpen(false)} onBuild={handleMultiSiteBuild} />
-      <SEOManagerDialog isOpen={isSEOManagerOpen} onClose={() => setIsSEOManagerOpen(false)} site={selectedSite} onSave={(seoData) => console.log('SEO saved:', seoData)} />
-      {selectedSite && (<><GoLiveDialog isOpen={isGoLiveOpen} onClose={() => setIsGoLiveOpen(false)} siteName={selectedSite.name} siteDomain={selectedSite.domain || selectedSite.url.replace('https://', '')} domainPrice={12.99} credentials={siteCredentials} onGoLive={handleGoLiveComplete} /><SiteTransferDialog isOpen={isTransferOpen} onClose={() => setIsTransferOpen(false)} siteName={selectedSite.name} siteId={selectedSite.id} onTransfer={handleTransferComplete} /><SubscriptionUpgradeDialog isOpen={isUpgradeOpen} onClose={() => setIsUpgradeOpen(false)} siteName={selectedSite.name} currentTier={selectedSite.billing?.subscriptionTier || 'free'} onUpgrade={handleUpgradeComplete} /></>)}
+      <CreateSiteWithDomainDialog isOpen={isCreateSiteOpen} onClose={() => setIsCreateSiteOpen(false)} onCreate={() => refetch()} tenantId={currentTenant?.id || ''} />
+      <MultiSiteBuilderDialog isOpen={isMultiSiteOpen} onClose={() => setIsMultiSiteOpen(false)} onBuild={() => refetch()} />
+      <ImportAppDialog open={isImportOpen} onOpenChange={setIsImportOpen} />
+      <SEOManagerDialog isOpen={isSEOManagerOpen} onClose={() => setIsSEOManagerOpen(false)} site={null} onSave={(seoData) => console.log('SEO saved:', seoData)} />
+      {selectedSite && (
+        <>
+          <GoLiveDialog isOpen={isGoLiveOpen} onClose={() => setIsGoLiveOpen(false)} siteName={selectedSite.name} siteDomain={selectedSite.domain || ''} domainPrice={12.99} credentials={[]} onGoLive={handleGoLiveComplete} />
+          <SiteTransferDialog isOpen={isTransferOpen} onClose={() => setIsTransferOpen(false)} siteName={selectedSite.name} siteId={selectedSite.id} onTransfer={handleTransferComplete} />
+          <SubscriptionUpgradeDialog isOpen={isUpgradeOpen} onClose={() => setIsUpgradeOpen(false)} siteName={selectedSite.name} currentTier="free" onUpgrade={handleUpgradeComplete} />
+        </>
+      )}
     </DashboardLayout>
   );
 };
