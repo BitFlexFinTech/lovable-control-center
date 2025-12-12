@@ -24,6 +24,7 @@ import { platformTemplates } from '@/types/social';
 import { useTenant } from '@/contexts/TenantContext';
 import { useToast } from '@/hooks/use-toast';
 import { checkUsernameAvailabilityAllPlatforms, validatePassword } from '@/utils/usernameValidator';
+import { exportSocialPrefillToPDF } from '@/utils/pdfExport';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -119,6 +120,7 @@ export default function SocialPrefill() {
       a.download = `social-accounts-${persona.username}.json`;
       a.click();
       URL.revokeObjectURL(url);
+      toast({ title: 'Exported as JSON' });
     } else if (format === 'csv') {
       const rows = [['Platform', 'Field', 'Value']];
       Object.entries(platformFields).forEach(([platform, fields]) => {
@@ -134,9 +136,11 @@ export default function SocialPrefill() {
       a.download = `social-accounts-${persona.username}.csv`;
       a.click();
       URL.revokeObjectURL(url);
+      toast({ title: 'Exported as CSV' });
+    } else if (format === 'pdf') {
+      exportSocialPrefillToPDF(persona, platformFields);
+      toast({ title: 'PDF Generated', description: 'Your PDF will open in a new tab for printing/saving.' });
     }
-
-    toast({ title: `Exported as ${format.toUpperCase()}` });
   };
 
   const copyPersona = async () => {

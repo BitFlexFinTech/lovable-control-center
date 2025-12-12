@@ -71,6 +71,39 @@ export type Database = {
         }
         Relationships: []
       }
+      api_keys: {
+        Row: {
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          key: string
+          last_used_at: string | null
+          name: string
+          permissions: string[] | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          key: string
+          last_used_at?: string | null
+          name: string
+          permissions?: string[] | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          key?: string
+          last_used_at?: string | null
+          name?: string
+          permissions?: string[] | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       audit_logs: {
         Row: {
           action: string
@@ -168,6 +201,90 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      emails: {
+        Row: {
+          account_id: string
+          body: string | null
+          body_preview: string | null
+          created_at: string | null
+          flags: string[] | null
+          folder: string | null
+          id: string
+          is_draft: boolean | null
+          recipients: Json
+          sender: string
+          starred: boolean | null
+          status: string | null
+          subject: string
+          thread_id: string | null
+          user_id: string
+        }
+        Insert: {
+          account_id: string
+          body?: string | null
+          body_preview?: string | null
+          created_at?: string | null
+          flags?: string[] | null
+          folder?: string | null
+          id?: string
+          is_draft?: boolean | null
+          recipients?: Json
+          sender: string
+          starred?: boolean | null
+          status?: string | null
+          subject: string
+          thread_id?: string | null
+          user_id: string
+        }
+        Update: {
+          account_id?: string
+          body?: string | null
+          body_preview?: string | null
+          created_at?: string | null
+          flags?: string[] | null
+          folder?: string | null
+          id?: string
+          is_draft?: boolean | null
+          recipients?: Json
+          sender?: string
+          starred?: boolean | null
+          status?: string | null
+          subject?: string
+          thread_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      error_logs: {
+        Row: {
+          component: string | null
+          created_at: string | null
+          id: string
+          level: string
+          message: string
+          metadata: Json | null
+          stack_trace: string | null
+        }
+        Insert: {
+          component?: string | null
+          created_at?: string | null
+          id?: string
+          level?: string
+          message: string
+          metadata?: Json | null
+          stack_trace?: string | null
+        }
+        Update: {
+          component?: string | null
+          created_at?: string | null
+          id?: string
+          level?: string
+          message?: string
+          metadata?: Json | null
+          stack_trace?: string | null
+        }
+        Relationships: []
       }
       imported_apps: {
         Row: {
@@ -496,6 +613,42 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           tenant_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      webhooks: {
+        Row: {
+          created_at: string | null
+          events: string[] | null
+          failure_count: number | null
+          id: string
+          last_triggered_at: string | null
+          name: string
+          status: string | null
+          url: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          events?: string[] | null
+          failure_count?: number | null
+          id?: string
+          last_triggered_at?: string | null
+          name: string
+          status?: string | null
+          url: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          events?: string[] | null
+          failure_count?: number | null
+          id?: string
+          last_triggered_at?: string | null
+          name?: string
+          status?: string | null
+          url?: string
           user_id?: string
         }
         Relationships: []

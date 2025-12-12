@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Settings, Loader2, Trash2, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,15 +30,15 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Tenant } from '@/types';
+import { useUpdateTenant, useDeleteTenant, SupabaseTenant } from '@/hooks/useSupabaseTenants';
 import { TenantSettings } from '@/types/monitoring';
 
 interface TenantSettingsDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  tenant: Tenant | null;
-  onUpdateTenant: (tenant: Tenant) => void;
-  onDeleteTenant: (tenantId: string) => void;
+  tenant: SupabaseTenant | null;
+  onUpdateTenant?: (tenant: SupabaseTenant) => void;
+  onDeleteTenant?: (tenantId: string) => void;
 }
 
 export function TenantSettingsDialog({
@@ -49,65 +49,87 @@ export function TenantSettingsDialog({
   onDeleteTenant,
 }: TenantSettingsDialogProps) {
   const { toast } = useToast();
-  const [isSaving, setIsSaving] = useState(false);
+  const updateTenantMutation = useUpdateTenant();
+  const deleteTenantMutation = useDeleteTenant();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [formData, setFormData] = useState<Partial<Tenant & { settings: TenantSettings }>>({});
+  const [formData, setFormData] = useState<Partial<SupabaseTenant & { settings: TenantSettings }>>({});
 
   // Update form when tenant changes
-  useState(() => {
+  useEffect(() => {
     if (tenant) {
       setFormData({
         name: tenant.name,
         slug: tenant.slug,
         environment: tenant.environment,
+        custom_domain: tenant.custom_domain,
+        ssl_enabled: tenant.ssl_enabled,
+        backups_enabled: tenant.backups_enabled,
         settings: {
           maxSites: 10,
           maxUsers: 50,
-          storageLimit: 10737418240, // 10GB
-          bandwidthLimit: 107374182400, // 100GB
-          customDomainEnabled: true,
-          sslEnabled: true,
-          backupEnabled: true,
+          storageLimit: 10737418240,
+          bandwidthLimit: 107374182400,
+          customDomainEnabled: tenant.custom_domain ?? true,
+          sslEnabled: tenant.ssl_enabled ?? true,
+          backupEnabled: tenant.backups_enabled ?? true,
           backupFrequency: 'daily',
         },
       });
     }
-  });
+  }, [tenant]);
 
   const handleSave = async () => {
     if (!tenant) return;
 
-    setIsSaving(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    try {
+      await updateTenantMutation.mutateAsync({
+        id: tenant.id,
+        name: formData.name || tenant.name,
+        slug: formData.slug || tenant.slug,
+        environment: formData.environment || tenant.environment,
+        custom_domain: formData.settings?.customDomainEnabled ?? tenant.custom_domain,
+        ssl_enabled: formData.settings?.sslEnabled ?? tenant.ssl_enabled,
+        backups_enabled: formData.settings?.backupEnabled ?? tenant.backups_enabled,
+      });
 
-    const updatedTenant: Tenant = {
-      ...tenant,
-      name: formData.name || tenant.name,
-      slug: formData.slug || tenant.slug,
-      environment: formData.environment || tenant.environment,
-      updatedAt: new Date().toISOString(),
-    };
-
-    onUpdateTenant(updatedTenant);
-    setIsSaving(false);
-
-    toast({
-      title: 'Tenant Updated',
-      description: 'Settings have been saved successfully.',
-    });
+      onUpdateTenant?.(tenant);
+      toast({
+        title: 'Tenant Updated',
+        description: 'Settings have been saved successfully.',
+      });
+      onClose();
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to update tenant settings.',
+        variant: 'destructive',
+      });
+    }
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!tenant) return;
-    onDeleteTenant(tenant.id);
-    setShowDeleteDialog(false);
-    onClose();
-    toast({
-      title: 'Tenant Deleted',
-      description: `${tenant.name} has been deleted.`,
-      variant: 'destructive',
-    });
+
+    try {
+      await deleteTenantMutation.mutateAsync(tenant.id);
+      onDeleteTenant?.(tenant.id);
+      setShowDeleteDialog(false);
+      onClose();
+      toast({
+        title: 'Tenant Deleted',
+        description: `${tenant.name} has been deleted.`,
+        variant: 'destructive',
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to delete tenant.',
+        variant: 'destructive',
+      });
+    }
   };
+
+  const isSaving = updateTenantMutation.isPending;
 
   if (!tenant) return null;
 
@@ -149,7 +171,7 @@ export function TenantSettingsDialog({
                 <Label>Environment</Label>
                 <Select
                   value={formData.environment || tenant.environment}
-                  onValueChange={(value: Tenant['environment']) =>
+                  onValueChange={(value: SupabaseTenant['environment']) =>
                     setFormData(prev => ({ ...prev, environment: value }))
                   }
                 >
