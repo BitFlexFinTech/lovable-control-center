@@ -42,20 +42,26 @@ export function useSites() {
 export function useSuggestions(sites: DashboardSite[] = []) {
   return useQuery({
     queryKey: ['suggestions', sites.map(s => s.id)],
-    queryFn: () => {
-      // Generate mock suggestions based on site data
-      const suggestions: AISuggestion[] = sites.slice(0, 3).map(s => ({
+    queryFn: (): AISuggestion[] => {
+      // Generate suggestions based on site data
+      return sites.slice(0, 3).map(s => ({
         id: `suggestion-${s.id}`,
-        siteId: s.id,
-        type: 'performance' as const,
         title: `Optimize ${s.name}`,
-        description: `Improve performance for ${s.name}`,
-        priority: 'medium' as const,
-        expectedImpact: '+15% load speed',
-        targetKPI: 'Performance',
+        description: `Improve performance metrics for ${s.name}`,
         category: 'performance' as const,
+        priority: 'medium' as const,
+        targetSiteId: s.id,
+        targetSiteName: s.name,
+        expectedImpact: '+15% load speed',
+        technicalDetails: {
+          filesAffected: ['src/pages/index.tsx'],
+          estimatedTime: '30 minutes',
+          complexity: 'simple' as const,
+          prompt: 'Optimize performance',
+        },
+        status: 'pending' as const,
+        createdAt: new Date().toISOString(),
       }));
-      return suggestions;
     },
     enabled: sites.length > 0,
     staleTime: 1000 * 60 * 10,
