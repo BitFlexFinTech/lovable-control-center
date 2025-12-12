@@ -58,6 +58,31 @@ const Index = () => {
   const isLoading = sitesLoading || suggestionsLoading;
   const isRefreshing = sitesRefetching;
 
+  // Convert DashboardSite to Site format for SiteAnalyticsCard
+  const convertToSite = (site: typeof filteredSites[0]) => ({
+    id: site.id,
+    tenantId: site.tenant_id || '',
+    name: site.name,
+    url: site.domain ? `https://${site.domain}` : '',
+    status: (site.status === 'live' || site.status === 'active' ? 'active' : 'inactive') as 'active' | 'inactive' | 'warning',
+    dashboards: [],
+    healthCheck: {
+      lastCheck: new Date().toISOString(),
+      status: (site.health_status === 'healthy' ? 'active' : 'inactive') as 'active' | 'inactive' | 'warning',
+      responseTime: site.response_time_ms || 150,
+      uptime: site.uptime_percentage || 99.9,
+    },
+    lastSync: new Date().toISOString(),
+    metrics: {
+      traffic: Math.floor(Math.random() * 10000),
+      trafficChange: Math.random() * 20 - 10,
+      orders: Math.floor(Math.random() * 500),
+      ordersChange: Math.random() * 20 - 10,
+    },
+    sparklineData: [0, 0, 0, 0, 0, 0, 0].map(() => Math.floor(Math.random() * 100)),
+    appColor: site.app_color || '#3b82f6',
+    demoMode: { isDemo: site.status === 'demo', isLive: site.status === 'live' },
+  });
   const handleRefresh = async () => {
     await refresh();
     toast({
@@ -276,7 +301,7 @@ const Index = () => {
           filteredSites.map((site, index) => (
             <SiteAnalyticsCard 
               key={site.id} 
-              site={site} 
+              site={convertToSite(site)} 
               suggestions={getSiteSuggestions(site.id)}
               onViewSuggestions={handleViewSiteSuggestions}
               delay={300 + index * 50} 
