@@ -1,27 +1,29 @@
-import { Globe, Users, HardDrive, Activity, TrendingUp, TrendingDown } from 'lucide-react';
+import { Globe, Users, HardDrive, Activity } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Tenant } from '@/types';
 import { TenantStats, TenantBilling } from '@/types/monitoring';
-import { sites, users } from '@/data/seed-data';
-import { cn } from '@/lib/utils';
+import { useSites } from '@/hooks/useSupabaseSites';
+import { useSupabaseUserCount } from '@/hooks/useSupabaseUsers';
 
 interface TenantStatsCardProps {
   tenant: Tenant;
 }
 
 export function TenantStatsCard({ tenant }: TenantStatsCardProps) {
-  // Calculate stats
-  const tenantSites = sites.filter(s => s.tenantId === tenant.id);
-  const tenantUsers = users.filter(u => (u as any).tenantId === tenant.id || true);
+  const { data: allSites = [] } = useSites();
+  const { data: userCount = 0 } = useSupabaseUserCount();
+
+  // Calculate stats from Supabase data
+  const tenantSites = allSites.filter(s => s.tenant_id === tenant.id);
   
   const stats: TenantStats = {
     totalSites: tenantSites.length,
-    activeSites: tenantSites.filter(s => s.status === 'active').length,
-    totalUsers: tenantUsers.length,
-    storageUsed: Math.random() * 5 * 1024 * 1024 * 1024, // Random 0-5GB
-    bandwidthUsed: Math.random() * 50 * 1024 * 1024 * 1024, // Random 0-50GB
+    activeSites: tenantSites.filter(s => s.status === 'active' || s.status === 'live').length,
+    totalUsers: userCount,
+    storageUsed: Math.random() * 5 * 1024 * 1024 * 1024, // Simulated 0-5GB
+    bandwidthUsed: Math.random() * 50 * 1024 * 1024 * 1024, // Simulated 0-50GB
     lastActivity: new Date(Date.now() - Math.random() * 24 * 60 * 60 * 1000).toISOString(),
   };
 
