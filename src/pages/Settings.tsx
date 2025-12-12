@@ -30,7 +30,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
   TableBody,
@@ -54,137 +54,32 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-
-// Mock API Keys
-interface ApiKey {
-  id: string;
-  name: string;
-  key: string;
-  createdAt: string;
-  expiresAt: string;
-  lastUsed?: string;
-  permissions: string[];
-}
-
-const mockApiKeys: ApiKey[] = [
-  {
-    id: 'key-1',
-    name: 'Production API Key',
-    key: 'pk_live_xxxxxxxxxxxxxxxxxxxxxxxx',
-    createdAt: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString(),
-    expiresAt: new Date(Date.now() + 275 * 24 * 60 * 60 * 1000).toISOString(),
-    lastUsed: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    permissions: ['read', 'write'],
-  },
-  {
-    id: 'key-2',
-    name: 'Development Key',
-    key: 'pk_dev_xxxxxxxxxxxxxxxxxxxxxxxx',
-    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-    expiresAt: new Date(Date.now() + 335 * 24 * 60 * 60 * 1000).toISOString(),
-    lastUsed: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-    permissions: ['read', 'write', 'admin'],
-  },
-];
-
-// Mock Webhooks
-interface Webhook {
-  id: string;
-  name: string;
-  url: string;
-  events: string[];
-  status: 'active' | 'inactive' | 'error';
-  lastTriggered?: string;
-  failureCount: number;
-}
-
-const mockWebhooks: Webhook[] = [
-  {
-    id: 'wh-1',
-    name: 'Slack Notifications',
-    url: 'https://hooks.slack.com/services/xxx',
-    events: ['site.down', 'site.up', 'backup.complete'],
-    status: 'active',
-    lastTriggered: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    failureCount: 0,
-  },
-  {
-    id: 'wh-2',
-    name: 'Analytics Webhook',
-    url: 'https://analytics.example.com/webhook',
-    events: ['user.login', 'user.signup'],
-    status: 'active',
-    lastTriggered: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-    failureCount: 0,
-  },
-  {
-    id: 'wh-3',
-    name: 'Error Reporting',
-    url: 'https://errors.example.com/hook',
-    events: ['error.critical'],
-    status: 'error',
-    lastTriggered: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-    failureCount: 3,
-  },
-];
-
-// Mock Error Logs
-interface ErrorLog {
-  id: string;
-  level: 'info' | 'warning' | 'error' | 'critical';
-  message: string;
-  source: string;
-  timestamp: string;
-  count: number;
-}
-
-const mockErrorLogs: ErrorLog[] = [
-  {
-    id: 'err-1',
-    level: 'critical',
-    message: 'Database connection timeout',
-    source: 'Database',
-    timestamp: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
-    count: 3,
-  },
-  {
-    id: 'err-2',
-    level: 'error',
-    message: 'Failed to send email notification',
-    source: 'Email Service',
-    timestamp: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
-    count: 12,
-  },
-  {
-    id: 'err-3',
-    level: 'warning',
-    message: 'High memory usage detected',
-    source: 'System Monitor',
-    timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    count: 5,
-  },
-  {
-    id: 'err-4',
-    level: 'info',
-    message: 'Scheduled backup started',
-    source: 'Backup Service',
-    timestamp: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-    count: 1,
-  },
-];
+import { useApiKeys, useCreateApiKey, useRotateApiKey, useDeleteApiKey } from '@/hooks/useSupabaseApiKeys';
+import { useWebhooks, useCreateWebhook, useDeleteWebhook } from '@/hooks/useSupabaseWebhooks';
+import { useErrorLogs } from '@/hooks/useSupabaseErrorLogs';
 
 const Settings = () => {
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
-  const [apiKeys, setApiKeys] = useState<ApiKey[]>(mockApiKeys);
-  const [webhooks, setWebhooks] = useState<Webhook[]>(mockWebhooks);
-  const [errorLogs] = useState<ErrorLog[]>(mockErrorLogs);
   const [showApiKey, setShowApiKey] = useState<string | null>(null);
   const [isCreateKeyOpen, setIsCreateKeyOpen] = useState(false);
   const [isCreateWebhookOpen, setIsCreateWebhookOpen] = useState(false);
   const [maintenanceMode, setMaintenanceMode] = useState(false);
   const [newKeyName, setNewKeyName] = useState('');
   const [newWebhook, setNewWebhook] = useState({ name: '', url: '', events: [] as string[] });
+  const [logLevelFilter, setLogLevelFilter] = useState('all');
+
+  // Supabase hooks
+  const { data: apiKeys = [], isLoading: apiKeysLoading } = useApiKeys();
+  const createApiKeyMutation = useCreateApiKey();
+  const rotateApiKeyMutation = useRotateApiKey();
+  const deleteApiKeyMutation = useDeleteApiKey();
+
+  const { data: webhooks = [], isLoading: webhooksLoading } = useWebhooks();
+  const createWebhookMutation = useCreateWebhook();
+  const deleteWebhookMutation = useDeleteWebhook();
+
+  const { data: errorLogs = [], isLoading: logsLoading } = useErrorLogs(logLevelFilter === 'all' ? undefined : logLevelFilter);
 
   // Settings state
   const [settings, setSettings] = useState({
@@ -210,45 +105,38 @@ const Settings = () => {
     });
   };
 
-  const handleCreateApiKey = () => {
+  const handleCreateApiKey = async () => {
     if (!newKeyName) {
       toast({ title: 'Error', description: 'Please enter a key name.', variant: 'destructive' });
       return;
     }
 
-    const newKey: ApiKey = {
-      id: `key-${Date.now()}`,
-      name: newKeyName,
-      key: `pk_${Math.random().toString(36).substring(2, 30)}`,
-      createdAt: new Date().toISOString(),
-      expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
-      permissions: ['read', 'write'],
-    };
-
-    setApiKeys(prev => [newKey, ...prev]);
-    setNewKeyName('');
-    setIsCreateKeyOpen(false);
-    toast({ title: 'API Key Created', description: 'New API key has been generated.' });
+    try {
+      await createApiKeyMutation.mutateAsync({ name: newKeyName });
+      setNewKeyName('');
+      setIsCreateKeyOpen(false);
+      toast({ title: 'API Key Created', description: 'New API key has been generated.' });
+    } catch (error) {
+      toast({ title: 'Error', description: 'Failed to create API key.', variant: 'destructive' });
+    }
   };
 
   const handleRotateKey = async (keyId: string) => {
-    setApiKeys(prev => prev.map(key => {
-      if (key.id === keyId) {
-        return {
-          ...key,
-          key: `pk_${Math.random().toString(36).substring(2, 30)}`,
-          createdAt: new Date().toISOString(),
-          expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
-        };
-      }
-      return key;
-    }));
-    toast({ title: 'Key Rotated', description: 'API key has been rotated successfully.' });
+    try {
+      await rotateApiKeyMutation.mutateAsync(keyId);
+      toast({ title: 'Key Rotated', description: 'API key has been rotated successfully.' });
+    } catch (error) {
+      toast({ title: 'Error', description: 'Failed to rotate API key.', variant: 'destructive' });
+    }
   };
 
-  const handleDeleteKey = (keyId: string) => {
-    setApiKeys(prev => prev.filter(k => k.id !== keyId));
-    toast({ title: 'Key Deleted', description: 'API key has been removed.' });
+  const handleDeleteKey = async (keyId: string) => {
+    try {
+      await deleteApiKeyMutation.mutateAsync(keyId);
+      toast({ title: 'Key Deleted', description: 'API key has been removed.' });
+    } catch (error) {
+      toast({ title: 'Error', description: 'Failed to delete API key.', variant: 'destructive' });
+    }
   };
 
   const handleCopyKey = (key: string) => {
@@ -256,28 +144,33 @@ const Settings = () => {
     toast({ title: 'Copied', description: 'API key copied to clipboard.' });
   };
 
-  const handleCreateWebhook = () => {
+  const handleCreateWebhook = async () => {
     if (!newWebhook.name || !newWebhook.url) {
       toast({ title: 'Error', description: 'Please fill in all fields.', variant: 'destructive' });
       return;
     }
 
-    const webhook: Webhook = {
-      id: `wh-${Date.now()}`,
-      ...newWebhook,
-      status: 'active',
-      failureCount: 0,
-    };
-
-    setWebhooks(prev => [webhook, ...prev]);
-    setNewWebhook({ name: '', url: '', events: [] });
-    setIsCreateWebhookOpen(false);
-    toast({ title: 'Webhook Created', description: 'New webhook has been configured.' });
+    try {
+      await createWebhookMutation.mutateAsync({
+        name: newWebhook.name,
+        url: newWebhook.url,
+        events: newWebhook.events.length > 0 ? newWebhook.events : ['site.down', 'site.up'],
+      });
+      setNewWebhook({ name: '', url: '', events: [] });
+      setIsCreateWebhookOpen(false);
+      toast({ title: 'Webhook Created', description: 'New webhook has been configured.' });
+    } catch (error) {
+      toast({ title: 'Error', description: 'Failed to create webhook.', variant: 'destructive' });
+    }
   };
 
-  const handleDeleteWebhook = (webhookId: string) => {
-    setWebhooks(prev => prev.filter(w => w.id !== webhookId));
-    toast({ title: 'Webhook Deleted', description: 'Webhook has been removed.' });
+  const handleDeleteWebhook = async (webhookId: string) => {
+    try {
+      await deleteWebhookMutation.mutateAsync(webhookId);
+      toast({ title: 'Webhook Deleted', description: 'Webhook has been removed.' });
+    } catch (error) {
+      toast({ title: 'Error', description: 'Failed to delete webhook.', variant: 'destructive' });
+    }
   };
 
   const handleToggleMaintenance = (enabled: boolean) => {
@@ -290,12 +183,13 @@ const Settings = () => {
     });
   };
 
-  const getLevelColor = (level: ErrorLog['level']) => {
+  const getLevelColor = (level: string) => {
     switch (level) {
       case 'critical': return 'text-status-inactive bg-status-inactive/10';
       case 'error': return 'text-status-warning bg-status-warning/10';
       case 'warning': return 'text-amber-500 bg-amber-500/10';
       case 'info': return 'text-primary bg-primary/10';
+      default: return 'text-muted-foreground bg-muted';
     }
   };
 
@@ -495,6 +389,16 @@ const Settings = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
+                  {apiKeysLoading && [1, 2].map((i) => (
+                    <TableRow key={i}>
+                      <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                      <TableCell><Skeleton className="h-6 w-48" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                      <TableCell><Skeleton className="h-8 w-20" /></TableCell>
+                    </TableRow>
+                  ))}
                   {apiKeys.map((key) => (
                     <TableRow key={key.id}>
                       <TableCell className="font-medium">{key.name}</TableCell>
@@ -520,13 +424,13 @@ const Settings = () => {
                         </div>
                       </TableCell>
                       <TableCell className="text-muted-foreground">
-                        {new Date(key.createdAt).toLocaleDateString()}
+                        {key.created_at ? new Date(key.created_at).toLocaleDateString() : '-'}
                       </TableCell>
                       <TableCell className="text-muted-foreground">
-                        {new Date(key.expiresAt).toLocaleDateString()}
+                        {key.expires_at ? new Date(key.expires_at).toLocaleDateString() : '-'}
                       </TableCell>
                       <TableCell className="text-muted-foreground">
-                        {key.lastUsed ? new Date(key.lastUsed).toLocaleString() : 'Never'}
+                        {key.last_used_at ? new Date(key.last_used_at).toLocaleString() : 'Never'}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
@@ -534,13 +438,15 @@ const Settings = () => {
                             variant="outline"
                             size="sm"
                             onClick={() => handleRotateKey(key.id)}
+                            disabled={rotateApiKeyMutation.isPending}
                           >
-                            <RefreshCw className="h-3.5 w-3.5" />
+                            <RefreshCw className={`h-3.5 w-3.5 ${rotateApiKeyMutation.isPending ? 'animate-spin' : ''}`} />
                           </Button>
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => handleDeleteKey(key.id)}
+                            disabled={deleteApiKeyMutation.isPending}
                           >
                             <Trash2 className="h-3.5 w-3.5 text-status-inactive" />
                           </Button>
@@ -548,6 +454,13 @@ const Settings = () => {
                       </TableCell>
                     </TableRow>
                   ))}
+                  {!apiKeysLoading && apiKeys.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                        No API keys found. Create one to get started.
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </CardContent>
@@ -568,6 +481,22 @@ const Settings = () => {
           </div>
 
           <div className="grid gap-4">
+            {webhooksLoading && [1, 2].map((i) => (
+              <Card key={i}>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <Skeleton className="h-10 w-10 rounded-lg" />
+                      <div>
+                        <Skeleton className="h-4 w-32 mb-2" />
+                        <Skeleton className="h-3 w-48" />
+                      </div>
+                    </div>
+                    <Skeleton className="h-6 w-16" />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
             {webhooks.map((webhook) => (
               <Card key={webhook.id}>
                 <CardContent className="p-4">
@@ -589,11 +518,11 @@ const Settings = () => {
                     </div>
                     <div className="flex items-center gap-4">
                       <div className="flex gap-2">
-                        {webhook.events.slice(0, 2).map((event) => (
+                        {(webhook.events || []).slice(0, 2).map((event) => (
                           <Badge key={event} variant="outline">{event}</Badge>
                         ))}
-                        {webhook.events.length > 2 && (
-                          <Badge variant="outline">+{webhook.events.length - 2}</Badge>
+                        {(webhook.events || []).length > 2 && (
+                          <Badge variant="outline">+{(webhook.events || []).length - 2}</Badge>
                         )}
                       </div>
                       <Badge variant={
@@ -602,13 +531,14 @@ const Settings = () => {
                       }>
                         {webhook.status}
                       </Badge>
-                      {webhook.failureCount > 0 && (
-                        <Badge variant="destructive">{webhook.failureCount} failures</Badge>
+                      {(webhook.failure_count || 0) > 0 && (
+                        <Badge variant="destructive">{webhook.failure_count} failures</Badge>
                       )}
                       <Button
                         variant="ghost"
                         size="icon-sm"
                         onClick={() => handleDeleteWebhook(webhook.id)}
+                        disabled={deleteWebhookMutation.isPending}
                       >
                         <Trash2 className="h-4 w-4 text-status-inactive" />
                       </Button>
@@ -617,6 +547,13 @@ const Settings = () => {
                 </CardContent>
               </Card>
             ))}
+            {!webhooksLoading && webhooks.length === 0 && (
+              <Card>
+                <CardContent className="p-8 text-center text-muted-foreground">
+                  No webhooks configured. Add one to get started.
+                </CardContent>
+              </Card>
+            )}
           </div>
         </TabsContent>
 
@@ -704,7 +641,7 @@ const Settings = () => {
               <p className="text-sm text-muted-foreground">Monitor system errors and warnings</p>
             </div>
             <div className="flex items-center gap-2">
-              <Select defaultValue="all">
+              <Select value={logLevelFilter} onValueChange={setLogLevelFilter}>
                 <SelectTrigger className="w-32">
                   <SelectValue placeholder="Filter" />
                 </SelectTrigger>
@@ -780,10 +717,17 @@ const Settings = () => {
                     <TableHead>Message</TableHead>
                     <TableHead>Source</TableHead>
                     <TableHead>Time</TableHead>
-                    <TableHead>Count</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
+                  {logsLoading && [1, 2, 3].map((i) => (
+                    <TableRow key={i}>
+                      <TableCell><Skeleton className="h-6 w-16" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-64" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                    </TableRow>
+                  ))}
                   {errorLogs.map((log) => (
                     <TableRow key={log.id}>
                       <TableCell>
@@ -794,15 +738,19 @@ const Settings = () => {
                       <TableCell className="font-medium max-w-md truncate">
                         {log.message}
                       </TableCell>
-                      <TableCell className="text-muted-foreground">{log.source}</TableCell>
+                      <TableCell className="text-muted-foreground">{log.component || '-'}</TableCell>
                       <TableCell className="text-muted-foreground">
-                        {new Date(log.timestamp).toLocaleString()}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{log.count}x</Badge>
+                        {log.created_at ? new Date(log.created_at).toLocaleString() : '-'}
                       </TableCell>
                     </TableRow>
                   ))}
+                  {!logsLoading && errorLogs.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                        No error logs found.
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </CardContent>
@@ -828,7 +776,10 @@ const Settings = () => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsCreateKeyOpen(false)}>Cancel</Button>
-            <Button onClick={handleCreateApiKey}>Create Key</Button>
+            <Button onClick={handleCreateApiKey} disabled={createApiKeyMutation.isPending}>
+              {createApiKeyMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Create Key
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -859,7 +810,10 @@ const Settings = () => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsCreateWebhookOpen(false)}>Cancel</Button>
-            <Button onClick={handleCreateWebhook}>Add Webhook</Button>
+            <Button onClick={handleCreateWebhook} disabled={createWebhookMutation.isPending}>
+              {createWebhookMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Add Webhook
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

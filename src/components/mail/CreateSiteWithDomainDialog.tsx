@@ -31,6 +31,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { useCart } from '@/contexts/CartContext';
 import { useIntegrations } from '@/contexts/IntegrationsContext';
+import { useCreateSite } from '@/hooks/useSupabaseSites';
 import { EmailAccount } from '@/types/mail';
 import { LinkedApp } from '@/types';
 import { analyzeAppForIntegrations, POPULAR_TLDS } from '@/utils/integrationAnalyzer';
@@ -74,6 +75,7 @@ export function CreateSiteWithDomainDialog({
   const { toast } = useToast();
   const { addToCart } = useCart();
   const { importIntegrationsForApp, getNextAppColor } = useIntegrations();
+  const createSiteMutation = useCreateSite();
   
   const [domain, setDomain] = useState('');
   const [step, setStep] = useState<Step>('input');
@@ -150,55 +152,76 @@ export function CreateSiteWithDomainDialog({
     const color = getNextAppColor();
     setAppColor(color);
     
-    // Simulate app creation
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    setStep('analyzing');
-    
-    // Analyze app for integrations
-    const analysis = analyzeAppForIntegrations(selectedDomain.baseDomain, selectedDomain.domain);
-    setAnalyzedIntegrations(analysis.detectedIntegrations);
-    
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Create the app with integrations
-    const appData: LinkedApp = {
-      siteId: `site-${Date.now()}`,
-      siteName: selectedDomain.baseDomain.charAt(0).toUpperCase() + selectedDomain.baseDomain.slice(1),
-      domain: selectedDomain.domain,
-      color,
-      linkedAt: new Date().toISOString(),
-    };
-    
-    // Import integrations for this app
-    importIntegrationsForApp(analysis.detectedIntegrations, appData);
-    
-    // Create email accounts
-    const emailAccounts: EmailAccount[] = DEFAULT_EMAIL_ACCOUNTS.map((name, index) => ({
-      id: `acc-${Date.now()}-${index}`,
-      tenantId,
-      name: name.charAt(0).toUpperCase() + name.slice(1),
-      email: `${name}@${selectedDomain.domain}`,
-      type: name as EmailAccount['type'],
-      createdAt: new Date().toISOString(),
-    }));
+    try {
+      // Actually create the site in Supabase
+      const siteName = selectedDomain.baseDomain.charAt(0).toUpperCase() + selectedDomain.baseDomain.slice(1);
+      
+      const createdSite = await createSiteMutation.mutateAsync({
+        name: siteName,
+        domain: selectedDomain.domain,
+        tenant_id: tenantId || undefined,
+        status: 'demo',
+        owner_type: 'admin',
+        lovable_url: `https://lovable.dev/projects/${selectedDomain.baseDomain}`,
+        app_color: color,
+      });
+      
+      setStep('analyzing');
+      
+      // Analyze app for integrations
+      const analysis = analyzeAppForIntegrations(selectedDomain.baseDomain, selectedDomain.domain);
+      setAnalyzedIntegrations(analysis.detectedIntegrations);
+      
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Create the app with integrations
+      const appData: LinkedApp = {
+        siteId: createdSite.id,
+        siteName: siteName,
+        domain: selectedDomain.domain,
+        color,
+        linkedAt: new Date().toISOString(),
+      };
+      
+      // Import integrations for this app
+      importIntegrationsForApp(analysis.detectedIntegrations, appData);
+      
+      // Create email accounts
+      const emailAccounts: EmailAccount[] = DEFAULT_EMAIL_ACCOUNTS.map((name, index) => ({
+        id: `acc-${Date.now()}-${index}`,
+        tenantId,
+        name: name.charAt(0).toUpperCase() + name.slice(1),
+        email: `${name}@${selectedDomain.domain}`,
+        type: name as EmailAccount['type'],
+        createdAt: new Date().toISOString(),
+      }));
 
-    const newSite: NewSiteData = {
-      name: appData.siteName,
-      domain: selectedDomain.domain,
-      url: `https://${selectedDomain.domain}`,
-      appColor: color,
-      requiredIntegrations: analysis.detectedIntegrations,
-    };
+      const newSite: NewSiteData = {
+        name: appData.siteName,
+        domain: selectedDomain.domain,
+        url: `https://${selectedDomain.domain}`,
+        appColor: color,
+        requiredIntegrations: analysis.detectedIntegrations,
+      };
 
-    onCreate(newSite, emailAccounts);
-    
-    setStep('success');
-    
-    toast({
-      title: 'App created successfully!',
-      description: `${analysis.detectedIntegrations.length} integrations imported. Domain pending in cart.`,
-    });
+      onCreate(newSite, emailAccounts);
+      
+      setStep('success');
+      
+      toast({
+        title: 'App created successfully!',
+        description: `${analysis.detectedIntegrations.length} integrations imported. Domain pending in cart.`,
+      });
+    } catch (error) {
+      console.error('Failed to create site:', error);
+      setErrorMessage(error instanceof Error ? error.message : 'Failed to create site');
+      setStep('error');
+      toast({
+        title: 'Failed to create site',
+        description: error instanceof Error ? error.message : 'An error occurred',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleClose = () => {
