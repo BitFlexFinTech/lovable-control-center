@@ -26,12 +26,14 @@ import {
   PreLaunchChecklistSkeleton,
   AISummarySkeleton,
 } from '@/components/dashboard/DashboardSkeletons';
+import { CreateSiteWithDomainDialog } from '@/components/mail/CreateSiteWithDomainDialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useHealthMonitor } from '@/contexts/HealthMonitorContext';
 import { useSites, useSuggestions, useDashboardRefresh } from '@/hooks/useDashboardData';
+import { useTenant } from '@/contexts/TenantContext';
 import { AISuggestion } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 
@@ -39,6 +41,7 @@ const Index = () => {
   const { toast } = useToast();
   const { isMonitoring, lastUpdate } = useHealthMonitor();
   const { refresh } = useDashboardRefresh();
+  const { currentTenant } = useTenant();
   
   // React Query hooks for data fetching
   const { data: filteredSites = [], isLoading: sitesLoading, isFetching: sitesRefetching } = useSites();
@@ -47,6 +50,7 @@ const Index = () => {
   const [suggestions, setSuggestions] = useState<AISuggestion[]>([]);
   const [previewSuggestion, setPreviewSuggestion] = useState<AISuggestion | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [isCreateSiteOpen, setIsCreateSiteOpen] = useState(false);
 
   // Sync suggestions from query to local state for mutations
   useState(() => {
@@ -161,7 +165,7 @@ const Index = () => {
               <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
               Sync All
             </Button>
-            <Button size="sm" className="gap-1.5">
+            <Button size="sm" className="gap-1.5" onClick={() => setIsCreateSiteOpen(true)}>
               <Plus className="h-3.5 w-3.5" />
               Add Site
             </Button>
@@ -319,7 +323,7 @@ const Index = () => {
           <p className="text-muted-foreground mb-4">
             Get started by adding your first site.
           </p>
-          <Button className="gap-1.5">
+          <Button className="gap-1.5" onClick={() => setIsCreateSiteOpen(true)}>
             <Plus className="h-4 w-4" />
             Add Site
           </Button>
@@ -348,6 +352,17 @@ const Index = () => {
         onClose={() => setIsPreviewOpen(false)}
         suggestion={previewSuggestion}
         onConfirmImplement={handleConfirmImplement}
+      />
+
+      {/* Create Site Dialog */}
+      <CreateSiteWithDomainDialog
+        isOpen={isCreateSiteOpen}
+        onClose={() => setIsCreateSiteOpen(false)}
+        onCreate={() => {
+          refresh();
+          setIsCreateSiteOpen(false);
+        }}
+        tenantId={currentTenant?.id || ''}
       />
     </DashboardLayout>
   );
