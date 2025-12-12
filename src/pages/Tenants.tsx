@@ -28,8 +28,8 @@ import { TenantStatsCard } from '@/components/tenants/TenantStatsCard';
 import { useTenants, useCreateTenant, useDeleteTenant, useSites } from '@/hooks/useSupabaseQuery';
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
 import { useDebounce } from '@/hooks/useDebounce';
-import { Tenant } from '@/types';
 import { useToast } from '@/hooks/use-toast';
+import { SupabaseTenant } from '@/hooks/useSupabaseTenants';
 
 const Tenants = () => {
   const { toast } = useToast();
@@ -38,7 +38,7 @@ const Tenants = () => {
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
+  const [selectedTenant, setSelectedTenant] = useState<SupabaseTenant | null>(null);
   const [deleteConfirmTenant, setDeleteConfirmTenant] = useState<string | null>(null);
 
   // Supabase hooks

@@ -28,6 +28,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { PermissionGate } from '@/components/permissions/PermissionGate';
+import { InviteUserDialog } from '@/components/users/InviteUserDialog';
 import { cn } from '@/lib/utils';
 import { useSupabaseUsers } from '@/hooks/useSupabaseUsers';
 import { useTenants } from '@/hooks/useSupabaseTenants';
@@ -46,6 +47,7 @@ const Users = () => {
   const [activeTab, setActiveTab] = useState<'all' | 'control-center' | 'apps'>('all');
   const [environmentFilter, setEnvironmentFilter] = useState<'all' | 'sandbox' | 'live'>('all');
   const [appFilter, setAppFilter] = useState<string>('all');
+  const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
 
   const { data: supabaseUsers = [], isLoading: usersLoading } = useSupabaseUsers();
   const { data: tenants = [], isLoading: tenantsLoading } = useTenants();
@@ -132,7 +134,7 @@ const Users = () => {
             </p>
           </div>
           <PermissionGate feature="users" action="create">
-            <Button size="sm" className="gap-1.5">
+            <Button size="sm" className="gap-1.5" onClick={() => setIsInviteDialogOpen(true)}>
               <Plus className="h-3.5 w-3.5" />
               Invite User
             </Button>

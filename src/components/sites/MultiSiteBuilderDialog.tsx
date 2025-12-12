@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { exportMultiSiteToPDF } from '@/utils/pdfExport';
 
 interface MultiSiteBuilderDialogProps {
   isOpen: boolean;
@@ -150,9 +151,10 @@ export function MultiSiteBuilderDialog({ isOpen, onClose, onBuild }: MultiSiteBu
   };
 
   const handleExportPDF = () => {
+    exportMultiSiteToPDF(generatedSites);
     toast({
-      title: 'PDF Export Started',
-      description: 'Your presentation will download shortly.',
+      title: 'PDF Generated',
+      description: 'Your presentation will open in a new tab for printing/saving.',
     });
   };
 

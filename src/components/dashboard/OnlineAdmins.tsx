@@ -18,7 +18,7 @@ export const OnlineAdmins = () => {
           {displayAdmins.map((admin) => (
             <Tooltip key={admin.id}>
               <TooltipTrigger asChild>
-                <div className="relative">
+                <button type="button" className="relative focus:outline-none">
                   <Avatar className="h-7 w-7 border-2 border-background">
                     <AvatarImage src={admin.avatar_url || undefined} />
                     <AvatarFallback className="text-[10px]">
@@ -29,7 +29,7 @@ export const OnlineAdmins = () => {
                     "absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-background",
                     "bg-status-active animate-pulse"
                   )} />
-                </div>
+                </button>
               </TooltipTrigger>
               <TooltipContent side="bottom" className="text-xs">
                 <p className="font-medium">{admin.full_name || 'Unknown'}</p>
@@ -41,9 +41,9 @@ export const OnlineAdmins = () => {
           {remainingCount > 0 && (
             <Tooltip>
               <TooltipTrigger asChild>
-                <div className="h-7 w-7 rounded-full bg-muted border-2 border-background flex items-center justify-center text-[10px] font-medium">
+                <button type="button" className="h-7 w-7 rounded-full bg-muted border-2 border-background flex items-center justify-center text-[10px] font-medium focus:outline-none">
                   +{remainingCount}
-                </div>
+                </button>
               </TooltipTrigger>
               <TooltipContent side="bottom" className="text-xs">
                 <p>{remainingCount} more online</p>
