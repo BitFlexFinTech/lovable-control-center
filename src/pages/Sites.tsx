@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MoreHorizontal, ExternalLink, Settings, RefreshCw, Search, Globe, Rocket, ArrowRight, CreditCard, BarChart3, Crown, User, Layers, Search as SearchIcon, ChevronDown, Import, Loader2, Eye, Link as LinkIcon, AlertCircle } from 'lucide-react';
+import { MoreHorizontal, ExternalLink, Settings, RefreshCw, Search, Globe, Rocket, ArrowRight, CreditCard, BarChart3, Crown, User, Layers, Search as SearchIcon, ChevronDown, Import, Loader2, Eye, Link as LinkIcon, AlertCircle, GitBranch } from 'lucide-react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { StatusPill } from '@/components/dashboard/StatusPill';
@@ -12,6 +12,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useTenant } from '@/contexts/TenantContext';
 import { useSites } from '@/hooks/useSupabaseSites';
+import { useSiteIntegrations } from '@/hooks/useSupabaseIntegrations';
 import { CreateSiteWithDomainDialog } from '@/components/mail/CreateSiteWithDomainDialog';
 import { GoLiveDialog } from '@/components/sites/GoLiveDialog';
 import { ControlCenterCard } from '@/components/sites/ControlCenterCard';
@@ -23,6 +24,7 @@ import { AnalyticsComparisonView } from '@/components/sites/AnalyticsComparisonV
 import { MultiSiteBuilderDialog } from '@/components/sites/MultiSiteBuilderDialog';
 import { SEOManagerDialog } from '@/components/sites/SEOManagerDialog';
 import { ImportAppDialog } from '@/components/sites/ImportAppDialog';
+import { ResyncIntegrationsDialog } from '@/components/sites/ResyncIntegrationsDialog';
 import { EmbeddedSiteViewer } from '@/components/sites/EmbeddedSiteViewer';
 import { VerifyProjectsDialog } from '@/components/sites/VerifyProjectsDialog';
 import { PermissionGate } from '@/components/permissions/PermissionGate';
@@ -46,11 +48,15 @@ const Sites = () => {
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [isEmbeddedViewerOpen, setIsEmbeddedViewerOpen] = useState(false);
   const [isVerifyOpen, setIsVerifyOpen] = useState(false);
+  const [isResyncOpen, setIsResyncOpen] = useState(false);
   const [selectedSite, setSelectedSite] = useState<typeof sites[0] | null>(null);
   const [isControlCenterLive, setIsControlCenterLive] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [ownerFilter, setOwnerFilter] = useState<'all' | SiteOwnerType>('all');
   const [viewMode, setViewMode] = useState<'list' | 'comparison'>('list');
+
+  // Fetch site integrations for resync dialog
+  const { data: siteIntegrations = [] } = useSiteIntegrations(selectedSite?.id);
 
   const filteredSites = sites
     .filter(site => site.name.toLowerCase().includes(searchQuery.toLowerCase()) || (site.domain?.toLowerCase().includes(searchQuery.toLowerCase())))
@@ -75,6 +81,7 @@ const Sites = () => {
   const handleUpgrade = (site: typeof sites[0]) => { setSelectedSite(site); setIsUpgradeOpen(true); };
   const handleSEOManager = (site: typeof sites[0]) => { setSelectedSite(site); setIsSEOManagerOpen(true); };
   const handleOpenSite = (site: typeof sites[0]) => { setSelectedSite(site); setIsEmbeddedViewerOpen(true); };
+  const handleResync = (site: typeof sites[0]) => { setSelectedSite(site); setIsResyncOpen(true); };
 
   const handleGoLiveComplete = async () => {
     if (!selectedSite) return;
@@ -128,6 +135,7 @@ const Sites = () => {
               </DropdownMenuItem>
               <DropdownMenuItem className="gap-2"><Settings className="h-4 w-4" />Settings</DropdownMenuItem>
               <DropdownMenuItem className="gap-2" onClick={() => handleSEOManager(site)}><SearchIcon className="h-4 w-4" />SEO Manager</DropdownMenuItem>
+              <DropdownMenuItem className="gap-2" onClick={() => handleResync(site)}><GitBranch className="h-4 w-4" />Re-Sync Integrations</DropdownMenuItem>
               <DropdownMenuSeparator />
               <PermissionGate feature="sites" action="update">
                 {site.owner_type === 'admin' && (
@@ -273,6 +281,16 @@ const Sites = () => {
             onClose={() => setIsEmbeddedViewerOpen(false)} 
             siteUrl={selectedSite.lovable_url || selectedSite.domain || ''} 
             siteName={selectedSite.name} 
+          />
+          <ResyncIntegrationsDialog
+            open={isResyncOpen}
+            onOpenChange={setIsResyncOpen}
+            site={{
+              id: selectedSite.id,
+              name: selectedSite.name,
+              domain: selectedSite.domain || undefined,
+            }}
+            currentIntegrations={siteIntegrations.map((si: { integration_id: string }) => si.integration_id)}
           />
         </>
       )}
