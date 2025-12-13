@@ -18,7 +18,7 @@ import {
 } from '@/components/dashboard/RealTimeIndicator';
 import { LiveActivityFeed } from '@/components/dashboard/LiveActivityFeed';
 import { OnlineAdmins } from '@/components/dashboard/OnlineAdmins';
-import { SocialFeedPanel } from '@/components/dashboard/SocialFeedPanel';
+
 import {
   SiteAnalyticsCardSkeleton,
   MonitoringWidgetSkeleton,
@@ -154,241 +154,229 @@ const [isCreateSiteOpen, setIsCreateSiteOpen] = useState(false);
 
   return (
     <DashboardLayout>
-      <div className="flex gap-6">
-        {/* Main Content - Left Side */}
-        <div className="flex-1 min-w-0">
-          {/* Page Header */}
-          <div className="mb-8 opacity-0 animate-fade-in">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="flex items-center gap-3">
-                  <h1 className="text-2xl font-semibold tracking-tight">Overview</h1>
-                  <RealTimeIndicator isConnected={isMonitoring} lastUpdate={lastUpdate} />
-                </div>
-                <p className="text-muted-foreground mt-1">
-                  Monitor all your sites and tenants from one place
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="gap-1.5"
-                  onClick={handleRefresh}
-                  disabled={isRefreshing}
-                >
-                  <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
-                  Sync All
+      {/* Page Header */}
+      <div className="mb-8 opacity-0 animate-fade-in">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-semibold tracking-tight">Overview</h1>
+              <RealTimeIndicator isConnected={isMonitoring} lastUpdate={lastUpdate} />
+            </div>
+            <p className="text-muted-foreground mt-1">
+              Monitor all your sites and tenants from one place
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="gap-1.5"
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+              Sync All
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" className="gap-1.5">
+                  <Globe className="h-3.5 w-3.5" />
+                  Create Site
+                  <ChevronDown className="h-3 w-3 ml-1" />
                 </Button>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button size="sm" className="gap-1.5">
-                      <Globe className="h-3.5 w-3.5" />
-                      Create Site
-                      <ChevronDown className="h-3 w-3 ml-1" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48">
-                    <DropdownMenuItem onClick={() => setIsCreateSiteOpen(true)}>
-                      <Globe className="h-4 w-4 mr-2" />
-                      Single Site
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setIsMultiSiteOpen(true)}>
-                      <Layers className="h-4 w-4 mr-2" />
-                      Multi-Site Builder
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => setIsImportOpen(true)}>
-                      <Import className="h-4 w-4 mr-2" />
-                      Import from Lovable
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </div>
-          </div>
-
-          {/* Pre-Launch Checklist */}
-          <div className="mb-6">
-            {isLoading ? <PreLaunchChecklistSkeleton /> : <PreLaunchChecklist />}
-          </div>
-
-          {/* Monitoring Widgets Row */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            {isLoading ? (
-              <>
-                <MonitoringWidgetSkeleton />
-                <MonitoringWidgetSkeleton />
-                <MonitoringWidgetSkeleton />
-                <MonitoringWidgetSkeleton />
-              </>
-            ) : (
-              <>
-                <HealthStatusWidget />
-                <SSLStatusWidget />
-                <EmailStatsWidget />
-                <BackupStatusWidget />
-              </>
-            )}
-          </div>
-
-          {/* Production Readiness + Live Activity */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
-            {isLoading ? (
-              <>
-                <ProductionReadinessSkeleton />
-                <ActivityFeedSkeleton />
-                <ActivityFeedSkeleton />
-              </>
-            ) : (
-              <>
-                <ProductionReadiness />
-                
-                {/* Live Metrics Card */}
-                <Card className="opacity-0 animate-fade-in" style={{ animationDelay: '100ms' }}>
-                  <CardHeader className="pb-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Activity className="h-4 w-4 text-primary" />
-                        <CardTitle className="text-sm font-medium">Live Metrics</CardTitle>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <Wifi className="h-3 w-3 text-status-active animate-pulse" />
-                        <span className="text-xs text-status-active">Live</span>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <LiveMetrics />
-                  </CardContent>
-                </Card>
-
-                {/* Activity Feed Card */}
-                <Card className="opacity-0 animate-fade-in" style={{ animationDelay: '150ms' }}>
-                  <CardHeader className="pb-2">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-sm font-medium">Recent Activity</CardTitle>
-                      <Badge variant="secondary" className="text-xs">Auto-updating</Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <LiveActivityFeed />
-                  </CardContent>
-                </Card>
-              </>
-            )}
-          </div>
-
-          {/* AI Analysis Summary */}
-          {isLoading ? (
-            <div className="mb-8">
-              <AISummarySkeleton />
-            </div>
-          ) : (
-            <div className="rounded-xl border bg-card p-5 mb-8 opacity-0 animate-fade-in" style={{ animationDelay: '200ms' }}>
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="h-5 w-5 text-primary" />
-                  <h3 className="font-semibold">AI Analysis Summary</h3>
-                </div>
-                <Badge variant="secondary">{pendingSuggestions.length} suggestions</Badge>
-              </div>
-              <p className="text-sm text-muted-foreground mb-4">
-                As a senior prompt engineer, I've analyzed your sites and identified {pendingSuggestions.length} improvement opportunities across performance, security, and SEO.
-              </p>
-              <div className="grid grid-cols-3 gap-4">
-                <div className="text-center p-3 rounded-lg bg-status-inactive/10">
-                  <span className="text-2xl font-bold text-status-inactive">
-                    {pendingSuggestions.filter(s => s.priority === 'high').length}
-                  </span>
-                  <p className="text-xs text-muted-foreground mt-1">High Priority</p>
-                </div>
-                <div className="text-center p-3 rounded-lg bg-status-warning/10">
-                  <span className="text-2xl font-bold text-status-warning">
-                    {pendingSuggestions.filter(s => s.priority === 'medium').length}
-                  </span>
-                  <p className="text-xs text-muted-foreground mt-1">Medium Priority</p>
-                </div>
-                <div className="text-center p-3 rounded-lg bg-primary/10">
-                  <span className="text-2xl font-bold text-primary">
-                    {pendingSuggestions.filter(s => s.priority === 'low').length}
-                  </span>
-                  <p className="text-xs text-muted-foreground mt-1">Low Priority</p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Sites Section Header */}
-          <div className="flex items-center gap-3 mb-4 opacity-0 animate-fade-in" style={{ animationDelay: '250ms' }}>
-            <span className="text-sm font-medium text-muted-foreground">Site Analytics</span>
-            <Separator className="flex-1" />
-            <Badge variant="secondary">
-              {filteredSites.length} site{filteredSites.length !== 1 ? 's' : ''}
-            </Badge>
-          </div>
-
-          {/* Site Analytics Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mb-8">
-            {isLoading ? (
-              <>
-                <SiteAnalyticsCardSkeleton />
-                <SiteAnalyticsCardSkeleton />
-                <SiteAnalyticsCardSkeleton />
-              </>
-            ) : (
-              filteredSites.map((site, index) => (
-                <SiteAnalyticsCard 
-                  key={site.id} 
-                  site={convertToSite(site)} 
-                  suggestions={getSiteSuggestions(site.id)}
-                  onViewSuggestions={handleViewSiteSuggestions}
-                  delay={300 + index * 50} 
-                />
-              ))
-            )}
-          </div>
-
-          {filteredSites.length === 0 && (
-            <div className="text-center py-16 opacity-0 animate-fade-in" style={{ animationDelay: '300ms' }}>
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-muted mb-4">
-                <Plus className="h-5 w-5 text-muted-foreground" />
-              </div>
-              <h3 className="text-lg font-medium mb-1">No sites found</h3>
-              <p className="text-muted-foreground mb-4">
-                Get started by adding your first site.
-              </p>
-              <Button className="gap-1.5" onClick={() => setIsCreateSiteOpen(true)}>
-                <Plus className="h-4 w-4" />
-                Add Site
-              </Button>
-            </div>
-          )}
-
-          {/* AI Suggestions Section */}
-          {pendingSuggestions.length > 0 && (
-            <>
-              <div className="flex items-center gap-3 mb-4 opacity-0 animate-fade-in" style={{ animationDelay: '350ms' }}>
-                <span className="text-sm font-medium text-muted-foreground">AI Recommendations</span>
-                <Separator className="flex-1" />
-              </div>
-              <AISuggestionBox
-                suggestions={suggestions}
-                onImplement={handleImplementSuggestion}
-                onChat={handleChatSuggestion}
-                onDismiss={handleDismissSuggestion}
-              />
-            </>
-          )}
-        </div>
-
-        {/* Social Feed Panel - Right Sidebar */}
-        <div className="hidden xl:block w-[380px] flex-shrink-0">
-          <div className="sticky top-4 h-[calc(100vh-6rem)]">
-            <SocialFeedPanel className="h-full" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onClick={() => setIsCreateSiteOpen(true)}>
+                  <Globe className="h-4 w-4 mr-2" />
+                  Single Site
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setIsMultiSiteOpen(true)}>
+                  <Layers className="h-4 w-4 mr-2" />
+                  Multi-Site Builder
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setIsImportOpen(true)}>
+                  <Import className="h-4 w-4 mr-2" />
+                  Import from Lovable
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </div>
+
+      {/* Pre-Launch Checklist */}
+      <div className="mb-6">
+        {isLoading ? <PreLaunchChecklistSkeleton /> : <PreLaunchChecklist />}
+      </div>
+
+      {/* Monitoring Widgets Row */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        {isLoading ? (
+          <>
+            <MonitoringWidgetSkeleton />
+            <MonitoringWidgetSkeleton />
+            <MonitoringWidgetSkeleton />
+            <MonitoringWidgetSkeleton />
+          </>
+        ) : (
+          <>
+            <HealthStatusWidget />
+            <SSLStatusWidget />
+            <EmailStatsWidget />
+            <BackupStatusWidget />
+          </>
+        )}
+      </div>
+
+      {/* Production Readiness + Live Activity */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
+        {isLoading ? (
+          <>
+            <ProductionReadinessSkeleton />
+            <ActivityFeedSkeleton />
+            <ActivityFeedSkeleton />
+          </>
+        ) : (
+          <>
+            <ProductionReadiness />
+            
+            {/* Live Metrics Card */}
+            <Card className="opacity-0 animate-fade-in" style={{ animationDelay: '100ms' }}>
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Activity className="h-4 w-4 text-primary" />
+                    <CardTitle className="text-sm font-medium">Live Metrics</CardTitle>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Wifi className="h-3 w-3 text-status-active animate-pulse" />
+                    <span className="text-xs text-status-active">Live</span>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <LiveMetrics />
+              </CardContent>
+            </Card>
+
+            {/* Activity Feed Card */}
+            <Card className="opacity-0 animate-fade-in" style={{ animationDelay: '150ms' }}>
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm font-medium">Recent Activity</CardTitle>
+                  <Badge variant="secondary" className="text-xs">Auto-updating</Badge>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <LiveActivityFeed />
+              </CardContent>
+            </Card>
+          </>
+        )}
+      </div>
+
+      {/* AI Analysis Summary */}
+      {isLoading ? (
+        <div className="mb-8">
+          <AISummarySkeleton />
+        </div>
+      ) : (
+        <div className="rounded-xl border bg-card p-5 mb-8 opacity-0 animate-fade-in" style={{ animationDelay: '200ms' }}>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              <h3 className="font-semibold">AI Analysis Summary</h3>
+            </div>
+            <Badge variant="secondary">{pendingSuggestions.length} suggestions</Badge>
+          </div>
+          <p className="text-sm text-muted-foreground mb-4">
+            As a senior prompt engineer, I've analyzed your sites and identified {pendingSuggestions.length} improvement opportunities across performance, security, and SEO.
+          </p>
+          <div className="grid grid-cols-3 gap-4">
+            <div className="text-center p-3 rounded-lg bg-status-inactive/10">
+              <span className="text-2xl font-bold text-status-inactive">
+                {pendingSuggestions.filter(s => s.priority === 'high').length}
+              </span>
+              <p className="text-xs text-muted-foreground mt-1">High Priority</p>
+            </div>
+            <div className="text-center p-3 rounded-lg bg-status-warning/10">
+              <span className="text-2xl font-bold text-status-warning">
+                {pendingSuggestions.filter(s => s.priority === 'medium').length}
+              </span>
+              <p className="text-xs text-muted-foreground mt-1">Medium Priority</p>
+            </div>
+            <div className="text-center p-3 rounded-lg bg-primary/10">
+              <span className="text-2xl font-bold text-primary">
+                {pendingSuggestions.filter(s => s.priority === 'low').length}
+              </span>
+              <p className="text-xs text-muted-foreground mt-1">Low Priority</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Sites Section Header */}
+      <div className="flex items-center gap-3 mb-4 opacity-0 animate-fade-in" style={{ animationDelay: '250ms' }}>
+        <span className="text-sm font-medium text-muted-foreground">Site Analytics</span>
+        <Separator className="flex-1" />
+        <Badge variant="secondary">
+          {filteredSites.length} site{filteredSites.length !== 1 ? 's' : ''}
+        </Badge>
+      </div>
+
+      {/* Site Analytics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mb-8">
+        {isLoading ? (
+          <>
+            <SiteAnalyticsCardSkeleton />
+            <SiteAnalyticsCardSkeleton />
+            <SiteAnalyticsCardSkeleton />
+          </>
+        ) : (
+          filteredSites.map((site, index) => (
+            <SiteAnalyticsCard 
+              key={site.id} 
+              site={convertToSite(site)} 
+              suggestions={getSiteSuggestions(site.id)}
+              onViewSuggestions={handleViewSiteSuggestions}
+              delay={300 + index * 50} 
+            />
+          ))
+        )}
+      </div>
+
+      {filteredSites.length === 0 && (
+        <div className="text-center py-16 opacity-0 animate-fade-in" style={{ animationDelay: '300ms' }}>
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-muted mb-4">
+            <Plus className="h-5 w-5 text-muted-foreground" />
+          </div>
+          <h3 className="text-lg font-medium mb-1">No sites found</h3>
+          <p className="text-muted-foreground mb-4">
+            Get started by adding your first site.
+          </p>
+          <Button className="gap-1.5" onClick={() => setIsCreateSiteOpen(true)}>
+            <Plus className="h-4 w-4" />
+            Add Site
+          </Button>
+        </div>
+      )}
+
+      {/* AI Suggestions Section */}
+      {pendingSuggestions.length > 0 && (
+        <>
+          <div className="flex items-center gap-3 mb-4 opacity-0 animate-fade-in" style={{ animationDelay: '350ms' }}>
+            <span className="text-sm font-medium text-muted-foreground">AI Recommendations</span>
+            <Separator className="flex-1" />
+          </div>
+          <AISuggestionBox
+            suggestions={suggestions}
+            onImplement={handleImplementSuggestion}
+            onChat={handleChatSuggestion}
+            onDismiss={handleDismissSuggestion}
+          />
+        </>
+      )}
 
       {/* Implementation Preview Dialog */}
       <ImplementationPreviewDialog
