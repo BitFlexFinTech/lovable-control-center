@@ -53,6 +53,24 @@ export function useCreateCredential() {
   });
 }
 
+export function useBulkCreateCredentials() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (credentials: Array<{ site_id: string; integration_id: string; email: string; password: string; status?: string; additional_fields?: Record<string, unknown> }>) => {
+      const { data, error } = await supabase
+        .from('credentials')
+        .insert(credentials as any)
+        .select();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['credentials'] });
+    },
+  });
+}
+
 export function useUpdateCredential() {
   const queryClient = useQueryClient();
 
