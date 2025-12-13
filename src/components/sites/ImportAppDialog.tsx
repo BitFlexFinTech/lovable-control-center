@@ -213,11 +213,23 @@ export function ImportAppDialog({ open, onOpenChange }: ImportAppDialogProps) {
 
         {step === 'preview' && (
           <div className="space-y-4 py-4">
+            {/* Editable Project Name */}
+            <div className="space-y-2">
+              <Label htmlFor="project-name">Project Name</Label>
+              <Input
+                id="project-name"
+                value={projectName}
+                onChange={(e) => setProjectName(e.target.value)}
+                placeholder="Enter project name"
+              />
+              <p className="text-xs text-muted-foreground">This name will be used to identify the site in Control Center</p>
+            </div>
+
             <div className="p-4 rounded-lg bg-primary/10 border border-primary/20">
               <div className="flex items-start gap-3">
                 <ExternalLink className="h-5 w-5 text-primary mt-0.5" />
                 <div className="flex-1">
-                  <p className="font-semibold">{projectName}</p>
+                  <p className="font-semibold">{projectName || 'Untitled Project'}</p>
                   <p className="text-xs text-muted-foreground truncate">{lovableUrl}</p>
                   <div className="flex items-center gap-2 mt-2">
                     <Badge variant="secondary" className="capitalize">{appType} app</Badge>

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MoreHorizontal, ExternalLink, Settings, RefreshCw, Search, Globe, Rocket, ArrowRight, CreditCard, BarChart3, Crown, User, Layers, Search as SearchIcon, ChevronDown, Import, Loader2 } from 'lucide-react';
+import { MoreHorizontal, ExternalLink, Settings, RefreshCw, Search, Globe, Rocket, ArrowRight, CreditCard, BarChart3, Crown, User, Layers, Search as SearchIcon, ChevronDown, Import, Loader2, Eye } from 'lucide-react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { StatusPill } from '@/components/dashboard/StatusPill';
@@ -23,6 +23,7 @@ import { AnalyticsComparisonView } from '@/components/sites/AnalyticsComparisonV
 import { MultiSiteBuilderDialog } from '@/components/sites/MultiSiteBuilderDialog';
 import { SEOManagerDialog } from '@/components/sites/SEOManagerDialog';
 import { ImportAppDialog } from '@/components/sites/ImportAppDialog';
+import { EmbeddedSiteViewer } from '@/components/sites/EmbeddedSiteViewer';
 import { PermissionGate } from '@/components/permissions/PermissionGate';
 import { useToast } from '@/hooks/use-toast';
 import { SiteOwnerType, SubscriptionTier } from '@/types/billing';
@@ -41,6 +42,7 @@ const Sites = () => {
   const [isMultiSiteOpen, setIsMultiSiteOpen] = useState(false);
   const [isSEOManagerOpen, setIsSEOManagerOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
+  const [isEmbeddedViewerOpen, setIsEmbeddedViewerOpen] = useState(false);
   const [selectedSite, setSelectedSite] = useState<typeof sites[0] | null>(null);
   const [isControlCenterLive, setIsControlCenterLive] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -63,6 +65,7 @@ const Sites = () => {
   const handleTransfer = (site: typeof sites[0]) => { setSelectedSite(site); setIsTransferOpen(true); };
   const handleUpgrade = (site: typeof sites[0]) => { setSelectedSite(site); setIsUpgradeOpen(true); };
   const handleSEOManager = (site: typeof sites[0]) => { setSelectedSite(site); setIsSEOManagerOpen(true); };
+  const handleOpenSite = (site: typeof sites[0]) => { setSelectedSite(site); setIsEmbeddedViewerOpen(true); };
 
   const handleGoLiveComplete = async () => {
     if (!selectedSite) return;
@@ -111,7 +114,9 @@ const Sites = () => {
           <DropdownMenu>
             <DropdownMenuTrigger asChild><Button variant="ghost" size="icon-sm"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem className="gap-2"><ExternalLink className="h-4 w-4" />Open Site</DropdownMenuItem>
+              <DropdownMenuItem className="gap-2" onClick={() => handleOpenSite(site)}>
+                <Eye className="h-4 w-4" />Open Site
+              </DropdownMenuItem>
               <DropdownMenuItem className="gap-2"><Settings className="h-4 w-4" />Settings</DropdownMenuItem>
               <DropdownMenuItem className="gap-2" onClick={() => handleSEOManager(site)}><SearchIcon className="h-4 w-4" />SEO Manager</DropdownMenuItem>
               <DropdownMenuSeparator />
@@ -240,6 +245,12 @@ const Sites = () => {
           <GoLiveDialog isOpen={isGoLiveOpen} onClose={() => setIsGoLiveOpen(false)} siteName={selectedSite.name} siteDomain={selectedSite.domain || ''} domainPrice={12.99} credentials={[]} onGoLive={handleGoLiveComplete} />
           <SiteTransferDialog isOpen={isTransferOpen} onClose={() => setIsTransferOpen(false)} siteName={selectedSite.name} siteId={selectedSite.id} onTransfer={handleTransferComplete} />
           <SubscriptionUpgradeDialog isOpen={isUpgradeOpen} onClose={() => setIsUpgradeOpen(false)} siteName={selectedSite.name} currentTier="free" onUpgrade={handleUpgradeComplete} />
+          <EmbeddedSiteViewer 
+            isOpen={isEmbeddedViewerOpen} 
+            onClose={() => setIsEmbeddedViewerOpen(false)} 
+            siteUrl={selectedSite.lovable_url || selectedSite.domain || ''} 
+            siteName={selectedSite.name} 
+          />
         </>
       )}
     </DashboardLayout>

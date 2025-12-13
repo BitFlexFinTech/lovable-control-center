@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Layers, MessageSquare, Palette, FileDown, Check, Loader2, Send, Sparkles, Globe } from 'lucide-react';
+import { Layers, FileDown, Check, Loader2, Globe, Copy, CheckCheck, Sparkles } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -8,10 +8,11 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -22,6 +23,10 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { exportMultiSiteToPDF } from '@/utils/pdfExport';
+import { prepareFullPrompt, MULTI_SITE_SYSTEM_PROMPT } from '@/utils/multiSiteSystemPrompt';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface MultiSiteBuilderDialogProps {
   isOpen: boolean;
@@ -29,9 +34,10 @@ interface MultiSiteBuilderDialogProps {
   onBuild: (sites: GeneratedSite[]) => void;
 }
 
-interface ChatMessage {
-  role: 'user' | 'assistant';
-  content: string;
+interface SitePrompt {
+  name: string;
+  prompt: string;
+  domain: string;
 }
 
 interface GeneratedSite {
@@ -48,6 +54,7 @@ interface GeneratedSite {
   features: string[];
   seoTitle: string;
   seoDescription: string;
+  fullPrompt: string;
 }
 
 const SITE_COUNT_OPTIONS = [2, 3, 4, 5, 6, 7, 8, 9, 10];
@@ -61,63 +68,53 @@ const THEME_STYLES = [
   { id: 'tech', name: 'Tech Futuristic', colors: ['#0EA5E9', '#8B5CF6'] },
 ];
 
+const APP_COLORS = [
+  '#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#ef4444',
+  '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#84cc16'
+];
+
 export function MultiSiteBuilderDialog({ isOpen, onClose, onBuild }: MultiSiteBuilderDialogProps) {
   const { toast } = useToast();
-  const [step, setStep] = useState<'count' | 'chat' | 'preview' | 'building'>('count');
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  
+  const [step, setStep] = useState<'count' | 'prompts' | 'preview' | 'building'>('count');
   const [siteCount, setSiteCount] = useState(3);
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    { 
-      role: 'assistant', 
-      content: "As a senior prompt engineer, I'll help you create multiple sites at once. Tell me about your project:\n\n• What industry or niche?\n• Target audience?\n• Key features needed?\n• Any branding preferences?" 
-    }
-  ]);
-  const [inputMessage, setInputMessage] = useState('');
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [sitePrompts, setSitePrompts] = useState<SitePrompt[]>([]);
   const [generatedSites, setGeneratedSites] = useState<GeneratedSite[]>([]);
   const [buildProgress, setBuildProgress] = useState(0);
+  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
-  const handleSendMessage = () => {
-    if (!inputMessage.trim()) return;
-
-    const userMessage = { role: 'user' as const, content: inputMessage };
-    setMessages(prev => [...prev, userMessage]);
-    setInputMessage('');
-    setIsGenerating(true);
-
-    // Simulate AI response
-    setTimeout(() => {
-      const assistantResponse = generateAIResponse(inputMessage, siteCount);
-      setMessages(prev => [...prev, { role: 'assistant', content: assistantResponse }]);
-      setIsGenerating(false);
-
-      // If enough context, generate sites
-      if (messages.length >= 2) {
-        generateSites(inputMessage, siteCount);
-      }
-    }, 1500);
+  // Initialize prompts when count changes
+  const initializePrompts = () => {
+    const prompts: SitePrompt[] = Array.from({ length: siteCount }, (_, i) => ({
+      name: `Site ${i + 1}`,
+      prompt: '',
+      domain: ''
+    }));
+    setSitePrompts(prompts);
+    setStep('prompts');
   };
 
-  const generateAIResponse = (userInput: string, count: number): string => {
-    const responses = [
-      `Great context! I'm now designing ${count} unique sites based on your requirements. Each will have:\n\n✓ Custom theme & color palette\n✓ SEO-optimized metadata\n✓ Tailored feature set\n\nGenerating your sites now...`,
-      `Perfect! I understand you need ${count} sites. Let me create diverse variations with different themes while maintaining brand consistency across all properties.`,
-      `Excellent details! Creating ${count} sites with optimized themes. Each site will be production-ready with proper SEO, responsive design, and core features.`
-    ];
-    return responses[Math.floor(Math.random() * responses.length)];
+  const updatePrompt = (index: number, field: keyof SitePrompt, value: string) => {
+    setSitePrompts(prev => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: value };
+      return updated;
+    });
   };
 
-  const generateSites = (context: string, count: number) => {
-    const sites: GeneratedSite[] = [];
-    const industries = ['E-commerce', 'Portfolio', 'SaaS', 'Blog', 'Agency', 'Restaurant', 'Fitness', 'Real Estate', 'Education', 'Healthcare'];
-    
-    for (let i = 0; i < count; i++) {
+  const generateSites = () => {
+    const sites: GeneratedSite[] = sitePrompts.map((sp, i) => {
       const theme = THEME_STYLES[i % THEME_STYLES.length];
-      const industry = industries[i % industries.length];
-      sites.push({
+      const fullPrompt = prepareFullPrompt(sp.prompt, i);
+      const domainSlug = sp.name.toLowerCase().replace(/[^a-z0-9]/g, '-');
+      
+      return {
         id: `site-${Date.now()}-${i}`,
-        name: `${industry} Site ${i + 1}`,
-        domain: `${industry.toLowerCase().replace(/\s/g, '')}-${i + 1}.com`,
-        description: `A beautiful ${theme.name.toLowerCase()} ${industry.toLowerCase()} website`,
+        name: sp.name || `Site ${i + 1}`,
+        domain: sp.domain || `${domainSlug}.lovable.app`,
+        description: sp.prompt.slice(0, 100) + (sp.prompt.length > 100 ? '...' : ''),
         theme: {
           primaryColor: theme.colors[0],
           secondaryColor: theme.colors[1],
@@ -125,36 +122,107 @@ export function MultiSiteBuilderDialog({ isOpen, onClose, onBuild }: MultiSiteBu
           style: theme.id,
         },
         features: ['Responsive Design', 'SEO Optimized', 'Contact Form', 'Analytics'],
-        seoTitle: `${industry} - Professional Solutions`,
-        seoDescription: `Discover top-quality ${industry.toLowerCase()} services. Built with modern technology for the best user experience.`,
-      });
-    }
+        seoTitle: `${sp.name} - Professional Solutions`,
+        seoDescription: sp.prompt.slice(0, 150),
+        fullPrompt,
+      };
+    });
     
     setGeneratedSites(sites);
-    setTimeout(() => setStep('preview'), 500);
+    setStep('preview');
+  };
+
+  const copyPrompt = async (index: number) => {
+    const site = generatedSites[index];
+    await navigator.clipboard.writeText(site.fullPrompt);
+    setCopiedIndex(index);
+    toast({
+      title: 'Prompt copied!',
+      description: `Full prompt for ${site.name} copied to clipboard. Paste in Lovable to create.`,
+    });
+    setTimeout(() => setCopiedIndex(null), 2000);
+  };
+
+  const copyAllPrompts = async () => {
+    const allPrompts = generatedSites.map((site, i) => 
+      `=== ${site.name} ===\n\n${site.fullPrompt}`
+    ).join('\n\n' + '='.repeat(50) + '\n\n');
+    
+    await navigator.clipboard.writeText(allPrompts);
+    toast({
+      title: 'All prompts copied!',
+      description: 'All site prompts copied to clipboard.',
+    });
   };
 
   const handleBuild = async () => {
-    setStep('building');
-    
-    for (let i = 0; i <= generatedSites.length; i++) {
-      setBuildProgress((i / generatedSites.length) * 100);
-      await new Promise(resolve => setTimeout(resolve, 800));
+    if (!user) {
+      toast({ title: 'Please sign in', variant: 'destructive' });
+      return;
     }
 
-    onBuild(generatedSites);
-    toast({
-      title: 'Sites Created Successfully',
-      description: `${generatedSites.length} sites are now in demo mode.`,
-    });
-    handleClose();
+    setStep('building');
+    
+    try {
+      const { data: tenants } = await supabase.from('tenants').select('id').limit(1);
+      const tenantId = tenants?.[0]?.id;
+      if (!tenantId) throw new Error('No tenant found');
+
+      const { data: existingSites } = await supabase.from('sites').select('app_color');
+      const usedColors = existingSites?.map(s => s.app_color) || [];
+
+      for (let i = 0; i < generatedSites.length; i++) {
+        const site = generatedSites[i];
+        setBuildProgress(((i + 1) / generatedSites.length) * 100);
+        
+        // Find available color
+        const availableColor = APP_COLORS.find(c => !usedColors.includes(c)) || APP_COLORS[i % APP_COLORS.length];
+        usedColors.push(availableColor);
+
+        // Create site in database with pending_creation status
+        const { data: createdSite, error } = await supabase.from('sites').insert({
+          name: site.name,
+          domain: site.domain,
+          tenant_id: tenantId,
+          status: 'pending_creation',
+          owner_type: 'admin',
+          app_color: availableColor,
+        }).select().single();
+
+        if (error) throw error;
+
+        // Store the prompt for later reference
+        await supabase.from('imported_apps').insert({
+          site_id: createdSite.id,
+          lovable_url: '', // Will be filled when user creates the project
+          project_name: site.name,
+          user_id: user.id,
+        });
+
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['sites'] });
+      
+      toast({
+        title: 'Sites prepared successfully!',
+        description: `${generatedSites.length} sites created as pending. Copy the prompts to create them in Lovable.`,
+      });
+      
+      onBuild(generatedSites);
+      handleClose();
+    } catch (error) {
+      console.error('Error creating sites:', error);
+      toast({ title: 'Error creating sites', variant: 'destructive' });
+      setStep('preview');
+    }
   };
 
   const handleExportPDF = () => {
     exportMultiSiteToPDF(generatedSites);
     toast({
       title: 'PDF Generated',
-      description: 'Your presentation will open in a new tab for printing/saving.',
+      description: 'Your presentation will open in a new tab.',
     });
   };
 
@@ -162,13 +230,12 @@ export function MultiSiteBuilderDialog({ isOpen, onClose, onBuild }: MultiSiteBu
     onClose();
     setStep('count');
     setSiteCount(3);
-    setMessages([{ 
-      role: 'assistant', 
-      content: "As a senior prompt engineer, I'll help you create multiple sites at once. Tell me about your project:\n\n• What industry or niche?\n• Target audience?\n• Key features needed?\n• Any branding preferences?" 
-    }]);
+    setSitePrompts([]);
     setGeneratedSites([]);
     setBuildProgress(0);
   };
+
+  const allPromptsValid = sitePrompts.every(sp => sp.name.trim() && sp.prompt.trim());
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -185,9 +252,9 @@ export function MultiSiteBuilderDialog({ isOpen, onClose, onBuild }: MultiSiteBu
           </DialogTitle>
           <DialogDescription>
             {step === 'count' && 'Select how many sites you want to create'}
-            {step === 'chat' && 'Describe your requirements to the AI assistant'}
-            {step === 'preview' && 'Review and customize your generated sites'}
-            {step === 'building' && 'Building your sites in demo mode...'}
+            {step === 'prompts' && 'Enter a prompt for each site describing what it should do'}
+            {step === 'preview' && 'Review your sites and copy prompts to create in Lovable'}
+            {step === 'building' && 'Creating site entries in Control Center...'}
           </DialogDescription>
         </DialogHeader>
 
@@ -228,70 +295,75 @@ export function MultiSiteBuilderDialog({ isOpen, onClose, onBuild }: MultiSiteBu
               ))}
             </div>
 
-            <Button className="w-full" onClick={() => setStep('chat')}>
-              <MessageSquare className="h-4 w-4 mr-2" />
-              Continue with AI Chat
+            <Button className="w-full" onClick={initializePrompts}>
+              <Sparkles className="h-4 w-4 mr-2" />
+              Continue to Prompts
             </Button>
           </div>
         )}
 
-        {/* Step: AI Chat */}
-        {step === 'chat' && (
-          <div className="flex flex-col h-[400px]">
-            <ScrollArea className="flex-1 p-4 -mx-6">
-              <div className="space-y-4 px-6">
-                {messages.map((msg, i) => (
-                  <div
-                    key={i}
-                    className={cn(
-                      "flex gap-3",
-                      msg.role === 'user' ? "justify-end" : "justify-start"
-                    )}
-                  >
-                    {msg.role === 'assistant' && (
-                      <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                        <Sparkles className="h-4 w-4 text-primary" />
+        {/* Step: Per-Site Prompts */}
+        {step === 'prompts' && (
+          <div className="space-y-4">
+            <ScrollArea className="h-[400px] -mx-6 px-6">
+              <div className="space-y-6 pb-4">
+                {sitePrompts.map((sp, i) => (
+                  <div key={i} className="space-y-3 p-4 rounded-lg border border-border bg-muted/30">
+                    <div className="flex items-center gap-2">
+                      <div 
+                        className="h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold text-white"
+                        style={{ backgroundColor: APP_COLORS[i % APP_COLORS.length] }}
+                      >
+                        {i + 1}
                       </div>
-                    )}
-                    <div
-                      className={cn(
-                        "rounded-lg px-4 py-2.5 max-w-[80%] whitespace-pre-line",
-                        msg.role === 'user'
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted"
-                      )}
-                    >
-                      {msg.content}
+                      <Label className="text-base font-medium">Site {i + 1}</Label>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor={`name-${i}`} className="text-sm">Site Name</Label>
+                      <Input
+                        id={`name-${i}`}
+                        value={sp.name}
+                        onChange={(e) => updatePrompt(i, 'name', e.target.value)}
+                        placeholder="e.g., My E-commerce Store"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor={`domain-${i}`} className="text-sm">Domain (optional)</Label>
+                      <Input
+                        id={`domain-${i}`}
+                        value={sp.domain}
+                        onChange={(e) => updatePrompt(i, 'domain', e.target.value)}
+                        placeholder="e.g., mystore.com"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor={`prompt-${i}`} className="text-sm">Prompt</Label>
+                      <Textarea
+                        id={`prompt-${i}`}
+                        value={sp.prompt}
+                        onChange={(e) => updatePrompt(i, 'prompt', e.target.value)}
+                        placeholder="Describe what this site should do, its features, target audience, etc..."
+                        rows={4}
+                      />
                     </div>
                   </div>
                 ))}
-                {isGenerating && (
-                  <div className="flex gap-3">
-                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Sparkles className="h-4 w-4 text-primary animate-pulse" />
-                    </div>
-                    <div className="bg-muted rounded-lg px-4 py-2.5">
-                      <div className="flex gap-1">
-                        <span className="h-2 w-2 bg-primary/40 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                        <span className="h-2 w-2 bg-primary/40 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                        <span className="h-2 w-2 bg-primary/40 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
             </ScrollArea>
 
-            <div className="flex gap-2 pt-4 border-t">
-              <Input
-                value={inputMessage}
-                onChange={(e) => setInputMessage(e.target.value)}
-                placeholder="Describe your project requirements..."
-                onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                disabled={isGenerating}
-              />
-              <Button onClick={handleSendMessage} disabled={!inputMessage.trim() || isGenerating}>
-                <Send className="h-4 w-4" />
+            <div className="flex gap-2 pt-2 border-t">
+              <Button variant="outline" className="flex-1" onClick={() => setStep('count')}>
+                Back
+              </Button>
+              <Button 
+                className="flex-1" 
+                onClick={generateSites}
+                disabled={!allPromptsValid}
+              >
+                Generate Sites
               </Button>
             </div>
           </div>
@@ -300,6 +372,16 @@ export function MultiSiteBuilderDialog({ isOpen, onClose, onBuild }: MultiSiteBu
         {/* Step: Preview */}
         {step === 'preview' && (
           <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">
+                Copy each prompt and paste it in Lovable to create the project
+              </p>
+              <Button variant="outline" size="sm" onClick={copyAllPrompts}>
+                <Copy className="h-3.5 w-3.5 mr-1.5" />
+                Copy All
+              </Button>
+            </div>
+
             <ScrollArea className="h-[350px] -mx-6 px-6">
               <div className="grid gap-4">
                 {generatedSites.map((site, i) => (
@@ -320,7 +402,23 @@ export function MultiSiteBuilderDialog({ isOpen, onClose, onBuild }: MultiSiteBu
                           <p className="text-sm text-muted-foreground">{site.domain}</p>
                         </div>
                       </div>
-                      <Badge variant="outline">{site.theme.style}</Badge>
+                      <Button 
+                        variant={copiedIndex === i ? "default" : "outline"} 
+                        size="sm"
+                        onClick={() => copyPrompt(i)}
+                      >
+                        {copiedIndex === i ? (
+                          <>
+                            <CheckCheck className="h-3.5 w-3.5 mr-1.5" />
+                            Copied!
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="h-3.5 w-3.5 mr-1.5" />
+                            Copy Prompt
+                          </>
+                        )}
+                      </Button>
                     </div>
                     
                     <p className="text-sm text-muted-foreground mb-3">{site.description}</p>
@@ -350,14 +448,14 @@ export function MultiSiteBuilderDialog({ isOpen, onClose, onBuild }: MultiSiteBu
               </div>
             </ScrollArea>
 
-            <div className="flex gap-2 pt-2">
+            <div className="flex gap-2 pt-2 border-t">
               <Button variant="outline" className="flex-1 gap-2" onClick={handleExportPDF}>
                 <FileDown className="h-4 w-4" />
                 Export PDF
               </Button>
               <Button className="flex-1 gap-2" onClick={handleBuild}>
                 <Layers className="h-4 w-4" />
-                Build All Sites
+                Create in Control Center
               </Button>
             </div>
           </div>
@@ -370,8 +468,8 @@ export function MultiSiteBuilderDialog({ isOpen, onClose, onBuild }: MultiSiteBu
               <div className="h-16 w-16 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
                 <Loader2 className="h-8 w-8 text-primary animate-spin" />
               </div>
-              <h3 className="text-lg font-medium">Building {generatedSites.length} Sites</h3>
-              <p className="text-sm text-muted-foreground">Creating demo environments...</p>
+              <h3 className="text-lg font-medium">Creating {generatedSites.length} Sites</h3>
+              <p className="text-sm text-muted-foreground">Setting up site entries...</p>
             </div>
 
             <div className="space-y-2">
