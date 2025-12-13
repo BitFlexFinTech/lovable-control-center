@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MoreHorizontal, ExternalLink, Settings, RefreshCw, Search, Globe, Rocket, ArrowRight, CreditCard, BarChart3, Crown, User, Layers, Search as SearchIcon, ChevronDown, Import, Loader2, Eye } from 'lucide-react';
+import { MoreHorizontal, ExternalLink, Settings, RefreshCw, Search, Globe, Rocket, ArrowRight, CreditCard, BarChart3, Crown, User, Layers, Search as SearchIcon, ChevronDown, Import, Loader2, Eye, LinkIcon, AlertCircle } from 'lucide-react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { StatusPill } from '@/components/dashboard/StatusPill';
@@ -58,6 +58,12 @@ const Sites = () => {
 
   const adminSites = filteredSites.filter(s => s.owner_type === 'admin' || !s.owner_type);
   const customerSites = filteredSites.filter(s => s.owner_type === 'customer');
+  
+  // Count pending creation sites for verify button
+  const pendingSites = useMemo(() => 
+    sites.filter(s => s.status === 'pending_creation'),
+    [sites]
+  );
 
   const getTenantName = (tenantId: string | null) => {
     if (!tenantId) return 'Unknown';
@@ -147,6 +153,20 @@ const Sites = () => {
             <p className="text-muted-foreground mt-1">Monitor and manage all your sites and their health status</p>
           </div>
           <div className="flex items-center gap-2">
+            {pendingSites.length > 0 && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="gap-1.5 border-status-warning/50 text-status-warning hover:bg-status-warning/10"
+                onClick={() => setIsVerifyOpen(true)}
+              >
+                <LinkIcon className="h-3.5 w-3.5" />
+                Verify Projects
+                <Badge className="ml-1 bg-status-warning/20 text-status-warning border-0 h-5 px-1.5">
+                  {pendingSites.length}
+                </Badge>
+              </Button>
+            )}
             <Button variant="outline" size="sm" className="gap-1.5" onClick={() => refetch()}><RefreshCw className="h-3.5 w-3.5" />Refresh</Button>
             <PermissionGate feature="sites" action="create">
               <DropdownMenu>
@@ -256,6 +276,7 @@ const Sites = () => {
           />
         </>
       )}
+      <VerifyProjectsDialog open={isVerifyOpen} onOpenChange={setIsVerifyOpen} />
     </DashboardLayout>
   );
 };

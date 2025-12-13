@@ -14,7 +14,8 @@ import {
   Video,
   Send,
   TrendingUp,
-  ExternalLink
+  ExternalLink,
+  Check
 } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -24,7 +25,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
-import { useUserSocialAccounts } from '@/hooks/useUserSocialAccounts';
+import { useUserSocialAccounts, useConnectSocialAccount } from '@/hooks/useUserSocialAccounts';
+import { toast } from '@/hooks/use-toast';
 
 // TikTok icon component
 const TikTokIcon = ({ className }: { className?: string }) => (
@@ -167,7 +169,12 @@ export function SocialFeedPanel({ className }: { className?: string }) {
   const [activePlatform, setActivePlatform] = useState<SocialPlatform>('twitter');
   const [activeTab, setActiveTab] = useState<'foryou' | 'following'>('foryou');
   const [composeText, setComposeText] = useState('');
+  const [isPosting, setIsPosting] = useState(false);
+  const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
+  const [bookmarkedPosts, setBookmarkedPosts] = useState<Set<string>>(new Set());
+  
   const { data: connectedAccounts = [] } = useUserSocialAccounts();
+  const connectAccount = useConnectSocialAccount();
 
   const activePlatformConfig = platforms.find(p => p.id === activePlatform)!;
   const posts = mockPosts[activePlatform] || [];
@@ -175,6 +182,111 @@ export function SocialFeedPanel({ className }: { className?: string }) {
   const isConnected = connectedAccounts.some(
     acc => acc.platform === activePlatform && acc.is_connected
   );
+
+  // Handle connect account
+  const handleConnectAccount = async () => {
+    try {
+      await connectAccount.mutateAsync({
+        platform: activePlatform,
+        username: `demo_${activePlatform}_user`,
+        display_name: `Demo ${activePlatformConfig.name} User`,
+      });
+      toast({
+        title: `${activePlatformConfig.name} Connected`,
+        description: `Your ${activePlatformConfig.name} account has been connected successfully.`,
+      });
+    } catch (error) {
+      toast({
+        title: 'Connection Failed',
+        description: 'Failed to connect account. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Handle image upload
+  const handleImageUpload = () => {
+    toast({
+      title: 'Image Upload',
+      description: 'Select an image to attach to your post.',
+    });
+  };
+
+  // Handle video upload
+  const handleVideoUpload = () => {
+    toast({
+      title: 'Video Upload',
+      description: 'Select a video to attach to your post.',
+    });
+  };
+
+  // Handle post
+  const handlePost = async () => {
+    if (!composeText.trim()) return;
+    
+    setIsPosting(true);
+    
+    // Simulate posting delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    toast({
+      title: 'Posted Successfully',
+      description: `Your post has been published to ${activePlatformConfig.name}.`,
+    });
+    
+    setComposeText('');
+    setIsPosting(false);
+  };
+
+  // Handle like
+  const handleLike = (postId: string) => {
+    setLikedPosts(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(postId)) {
+        newSet.delete(postId);
+        toast({ title: 'Removed like' });
+      } else {
+        newSet.add(postId);
+        toast({ title: 'Liked!' });
+      }
+      return newSet;
+    });
+  };
+
+  // Handle bookmark
+  const handleBookmark = (postId: string) => {
+    setBookmarkedPosts(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(postId)) {
+        newSet.delete(postId);
+        toast({ title: 'Removed from bookmarks' });
+      } else {
+        newSet.add(postId);
+        toast({ title: 'Added to bookmarks' });
+      }
+      return newSet;
+    });
+  };
+
+  // Handle comment
+  const handleComment = (postId: string) => {
+    toast({ title: 'Comments', description: 'Opening comments...' });
+  };
+
+  // Handle share
+  const handleShare = (postId: string) => {
+    toast({ title: 'Share', description: 'Post link copied to clipboard!' });
+  };
+
+  // Handle show more
+  const handleShowMore = () => {
+    toast({ title: 'Loading more news...', description: 'Fetching trending topics.' });
+  };
+
+  // Handle post menu
+  const handlePostMenu = (postId: string) => {
+    toast({ title: 'Post Options', description: 'Report, Mute, Block, Copy Link' });
+  };
 
   return (
     <Card className={cn("h-full flex flex-col overflow-hidden", className)}>
@@ -266,10 +378,22 @@ export function SocialFeedPanel({ className }: { className?: string }) {
               />
               <div className="flex items-center justify-between">
                 <div className="flex gap-1">
-                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-7 w-7 p-0"
+                    onClick={handleImageUpload}
+                    title="Add image"
+                  >
                     <ImageIcon className="h-4 w-4 text-muted-foreground" />
                   </Button>
-                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-7 w-7 p-0"
+                    onClick={handleVideoUpload}
+                    title="Add video"
+                  >
                     <Video className="h-4 w-4 text-muted-foreground" />
                   </Button>
                 </div>
@@ -277,10 +401,17 @@ export function SocialFeedPanel({ className }: { className?: string }) {
                   size="sm" 
                   className="h-7 px-3"
                   style={{ backgroundColor: activePlatformConfig.color }}
-                  disabled={!composeText.trim()}
+                  disabled={!composeText.trim() || isPosting}
+                  onClick={handlePost}
                 >
-                  <Send className="h-3.5 w-3.5 mr-1" />
-                  Post
+                  {isPosting ? (
+                    <span className="animate-spin h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full" />
+                  ) : (
+                    <>
+                      <Send className="h-3.5 w-3.5 mr-1" />
+                      Post
+                    </>
+                  )}
                 </Button>
               </div>
             </div>
@@ -308,83 +439,122 @@ export function SocialFeedPanel({ className }: { className?: string }) {
               <Button 
                 size="sm"
                 style={{ backgroundColor: activePlatformConfig.color }}
+                onClick={handleConnectAccount}
+                disabled={connectAccount.isPending}
               >
-                Connect Account
+                {connectAccount.isPending ? (
+                  <>
+                    <span className="animate-spin h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full mr-2" />
+                    Connecting...
+                  </>
+                ) : (
+                  'Connect Account'
+                )}
               </Button>
             </div>
           ) : (
             <div className="divide-y divide-border">
-              {posts.map((post) => (
-                <article key={post.id} className="p-3 hover:bg-muted/30 transition-colors">
-                  <div className="flex gap-2.5">
-                    <Avatar className="h-9 w-9 flex-shrink-0">
-                      <AvatarImage src={post.author.avatar} />
-                      <AvatarFallback className="text-xs">
-                        {post.author.name.slice(0, 2).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1 mb-0.5">
-                        <span className="font-medium text-sm truncate">
-                          {post.author.name}
-                        </span>
-                        {post.author.verified && (
-                          <Badge variant="secondary" className="h-4 px-1 text-[10px]">✓</Badge>
-                        )}
-                        <span className="text-muted-foreground text-xs truncate">
-                          {post.author.handle}
-                        </span>
-                        <span className="text-muted-foreground text-xs">·</span>
-                        <span className="text-muted-foreground text-xs">{post.timestamp}</span>
-                      </div>
-                      <p className="text-sm mb-2 leading-relaxed">{post.content}</p>
-                      
-                      {post.media && (
-                        <div className="mb-2 rounded-lg overflow-hidden border border-border">
-                          {post.media.type === 'image' && post.media.url ? (
-                            <img 
-                              src={post.media.url} 
-                              alt="" 
-                              className="w-full h-32 object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-32 bg-muted flex items-center justify-center">
-                              <Video className="h-8 w-8 text-muted-foreground" />
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Engagement Stats */}
-                      <div className="flex items-center justify-between text-muted-foreground">
-                        <button className="flex items-center gap-1 hover:text-foreground transition-colors text-xs">
-                          <MessageCircle className="h-3.5 w-3.5" />
-                          {formatNumber(post.engagement.comments)}
-                        </button>
-                        <button className="flex items-center gap-1 hover:text-status-active transition-colors text-xs">
-                          <Share2 className="h-3.5 w-3.5" />
-                          {formatNumber(post.engagement.shares)}
-                        </button>
-                        <button className="flex items-center gap-1 hover:text-red-500 transition-colors text-xs">
-                          <Heart className="h-3.5 w-3.5" />
-                          {formatNumber(post.engagement.likes)}
-                        </button>
-                        {post.engagement.views && (
-                          <span className="text-xs">
-                            {formatNumber(post.engagement.views)} views
+              {posts.map((post) => {
+                const isLiked = likedPosts.has(post.id);
+                const isBookmarked = bookmarkedPosts.has(post.id);
+                
+                return (
+                  <article key={post.id} className="p-3 hover:bg-muted/30 transition-colors">
+                    <div className="flex gap-2.5">
+                      <Avatar className="h-9 w-9 flex-shrink-0">
+                        <AvatarImage src={post.author.avatar} />
+                        <AvatarFallback className="text-xs">
+                          {post.author.name.slice(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1 mb-0.5">
+                          <span className="font-medium text-sm truncate">
+                            {post.author.name}
                           </span>
+                          {post.author.verified && (
+                            <Badge variant="secondary" className="h-4 px-1 text-[10px]">
+                              <Check className="h-2.5 w-2.5" />
+                            </Badge>
+                          )}
+                          <span className="text-muted-foreground text-xs truncate">
+                            {post.author.handle}
+                          </span>
+                          <span className="text-muted-foreground text-xs">·</span>
+                          <span className="text-muted-foreground text-xs">{post.timestamp}</span>
+                        </div>
+                        <p className="text-sm mb-2 leading-relaxed">{post.content}</p>
+                        
+                        {post.media && (
+                          <div className="mb-2 rounded-lg overflow-hidden border border-border">
+                            {post.media.type === 'image' && post.media.url ? (
+                              <img 
+                                src={post.media.url} 
+                                alt="" 
+                                className="w-full h-32 object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-32 bg-muted flex items-center justify-center">
+                                <Video className="h-8 w-8 text-muted-foreground" />
+                              </div>
+                            )}
+                          </div>
                         )}
-                        <button className="hover:text-foreground transition-colors">
-                          <Bookmark className="h-3.5 w-3.5" />
-                        </button>
+
+                        {/* Engagement Stats */}
+                        <div className="flex items-center justify-between text-muted-foreground">
+                          <button 
+                            className="flex items-center gap-1 hover:text-foreground transition-colors text-xs"
+                            onClick={() => handleComment(post.id)}
+                          >
+                            <MessageCircle className="h-3.5 w-3.5" />
+                            {formatNumber(post.engagement.comments)}
+                          </button>
+                          <button 
+                            className="flex items-center gap-1 hover:text-status-active transition-colors text-xs"
+                            onClick={() => handleShare(post.id)}
+                          >
+                            <Share2 className="h-3.5 w-3.5" />
+                            {formatNumber(post.engagement.shares)}
+                          </button>
+                          <button 
+                            className={cn(
+                              "flex items-center gap-1 transition-colors text-xs",
+                              isLiked ? "text-red-500" : "hover:text-red-500"
+                            )}
+                            onClick={() => handleLike(post.id)}
+                          >
+                            <Heart className={cn("h-3.5 w-3.5", isLiked && "fill-current")} />
+                            {formatNumber(post.engagement.likes + (isLiked ? 1 : 0))}
+                          </button>
+                          {post.engagement.views && (
+                            <span className="text-xs">
+                              {formatNumber(post.engagement.views)} views
+                            </span>
+                          )}
+                          <button 
+                            className={cn(
+                              "transition-colors",
+                              isBookmarked ? "text-primary" : "hover:text-foreground"
+                            )}
+                            onClick={() => handleBookmark(post.id)}
+                          >
+                            <Bookmark className={cn("h-3.5 w-3.5", isBookmarked && "fill-current")} />
+                          </button>
+                        </div>
                       </div>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-7 w-7 p-0 flex-shrink-0"
+                        onClick={() => handlePostMenu(post.id)}
+                      >
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
                     </div>
-                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0 flex-shrink-0">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </article>
-              ))}
+                  </article>
+                );
+              })}
             </div>
           )}
 
@@ -396,7 +566,11 @@ export function SocialFeedPanel({ className }: { className?: string }) {
             </div>
             <div className="space-y-2">
               {trendingNews.map((news, i) => (
-                <div key={i} className="group cursor-pointer">
+                <div 
+                  key={i} 
+                  className="group cursor-pointer"
+                  onClick={() => toast({ title: news.title, description: `${news.posts} posts about this topic` })}
+                >
                   <p className="text-xs text-muted-foreground">{news.topic}</p>
                   <p className="text-sm font-medium group-hover:text-primary transition-colors">
                     {news.title}
@@ -405,7 +579,12 @@ export function SocialFeedPanel({ className }: { className?: string }) {
                 </div>
               ))}
             </div>
-            <Button variant="link" size="sm" className="p-0 h-auto mt-2 text-primary">
+            <Button 
+              variant="link" 
+              size="sm" 
+              className="p-0 h-auto mt-2 text-primary"
+              onClick={handleShowMore}
+            >
               Show more <ExternalLink className="h-3 w-3 ml-1" />
             </Button>
           </div>

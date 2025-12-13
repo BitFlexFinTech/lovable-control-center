@@ -54,17 +54,47 @@ export function ImportAppDialog({ open, onOpenChange }: ImportAppDialogProps) {
   const [availableIntegrations, setAvailableIntegrations] = useState<Integration[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  const parseUrl = (url: string) => {
+  // Extract project name from URL - prioritize readable names over UUIDs
+  const parseUrl = (url: string): string => {
+    // Try to get project slug from various URL patterns
     const patterns = [
-      /lovable\.dev\/projects\/([^\/\?]+)/,
+      // lovable.dev/projects/my-project-name or lovable.dev/projects/uuid
+      /lovable\.dev\/projects\/([^\/\?\#]+)/,
+      // my-project.lovable.app
       /([^\/\.]+)\.lovable\.app/,
-      /lovable\.app\/([^\/\?]+)/
+      // lovable.app/my-project
+      /lovable\.app\/([^\/\?\#]+)/
     ];
+    
     for (const pattern of patterns) {
       const match = url.match(pattern);
-      if (match) return match[1];
+      if (match && match[1]) {
+        const slug = match[1];
+        // Check if it's a UUID pattern - if so, try to get a better name
+        const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (uuidPattern.test(slug)) {
+          // Return a formatted version but user can edit
+          return 'My Lovable Project';
+        }
+        // Convert slug to readable name: my-project-name -> My Project Name
+        return slug
+          .split('-')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ');
+      }
     }
-    return url.replace(/https?:\/\//, '').split('/')[0].split('.')[0];
+    
+    // Fallback: extract something meaningful from the URL
+    const cleanUrl = url.replace(/https?:\/\//, '');
+    const firstPart = cleanUrl.split('/')[0].split('.')[0];
+    
+    // If it looks like a UUID, use default name
+    const uuidPattern = /^[0-9a-f]{8}/i;
+    if (uuidPattern.test(firstPart)) {
+      return 'My Lovable Project';
+    }
+    
+    return firstPart.charAt(0).toUpperCase() + firstPart.slice(1);
   };
 
   const handleUrlSubmit = async () => {
