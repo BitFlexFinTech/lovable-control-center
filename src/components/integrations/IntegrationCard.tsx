@@ -108,17 +108,46 @@ export function IntegrationCard({
         {isInAppActive ? inAppAlt.description : integration.description}
       </p>
 
-      {/* Linked Apps */}
+      {/* Linked Apps - Enhanced Multi-Site Labels */}
       {hasLinkedApps && (
         <div className="mb-4">
-          <p className="text-xs text-muted-foreground mb-2">Used by:</p>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs text-muted-foreground">Used by:</p>
+            {integration.linkedApps.length > 1 && (
+              <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 bg-primary/10 text-primary border-primary/20">
+                {integration.linkedApps.length} sites
+              </Badge>
+            )}
+          </div>
           <div className="flex flex-wrap gap-1.5">
             {integration.linkedApps.map(app => (
-              <AppTag 
-                key={app.siteId} 
-                app={app} 
-                onRemove={onRemoveApp ? () => onRemoveApp(app.siteId) : undefined}
-              />
+              <Badge
+                key={app.siteId}
+                variant="outline"
+                className="gap-1.5 px-2 py-1 text-xs font-medium border-2 transition-all hover:scale-105"
+                style={{
+                  backgroundColor: `${app.color}15`,
+                  borderColor: `${app.color}50`,
+                  color: app.color,
+                }}
+              >
+                <span
+                  className="w-2 h-2 rounded-full"
+                  style={{ backgroundColor: app.color }}
+                />
+                {app.siteName}
+                {onRemoveApp && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onRemoveApp(app.siteId);
+                    }}
+                    className="ml-1 hover:opacity-70 transition-opacity"
+                  >
+                    ×
+                  </button>
+                )}
+              </Badge>
             ))}
           </div>
         </div>
