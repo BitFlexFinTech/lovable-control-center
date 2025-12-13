@@ -5,12 +5,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Import, Loader2, Check, ExternalLink, Sparkles, AlertCircle } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Import, Loader2, Check, ExternalLink, Sparkles, AlertCircle, ChevronRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
-import { analyzeAppForIntegrations } from '@/utils/integrationAnalyzer';
+import { analyzeAppForIntegrations, APP_CATEGORY_BUNDLES } from '@/utils/integrationAnalyzer';
 
 interface ImportAppDialogProps {
   open: boolean;
@@ -45,24 +47,20 @@ function generatePassword(): string {
 export function ImportAppDialog({ open, onOpenChange }: ImportAppDialogProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [step, setStep] = useState<'url' | 'preview' | 'importing'>('url');
+  const [step, setStep] = useState<'url' | 'configure' | 'importing'>('url');
   const [lovableUrl, setLovableUrl] = useState('');
   const [projectName, setProjectName] = useState('');
-  const [detectedIntegrations, setDetectedIntegrations] = useState<string[]>([]);
-  const [appType, setAppType] = useState('');
-  const [confidence, setConfidence] = useState(0);
+  const [selectedCategory, setSelectedCategory] = useState<string>('other');
+  const [selectedIntegrations, setSelectedIntegrations] = useState<Set<string>>(new Set());
   const [availableIntegrations, setAvailableIntegrations] = useState<Integration[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [autoDetected, setAutoDetected] = useState<string[]>([]);
 
-  // Extract project name from URL - prioritize readable names over UUIDs
+  // Extract project name from URL
   const parseUrl = (url: string): string => {
-    // Try to get project slug from various URL patterns
     const patterns = [
-      // lovable.dev/projects/my-project-name or lovable.dev/projects/uuid
       /lovable\.dev\/projects\/([^\/\?\#]+)/,
-      // my-project.lovable.app
       /([^\/\.]+)\.lovable\.app/,
-      // lovable.app/my-project
       /lovable\.app\/([^\/\?\#]+)/
     ];
     
@@ -70,25 +68,16 @@ export function ImportAppDialog({ open, onOpenChange }: ImportAppDialogProps) {
       const match = url.match(pattern);
       if (match && match[1]) {
         const slug = match[1];
-        // Check if it's a UUID pattern - if so, try to get a better name
         const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
         if (uuidPattern.test(slug)) {
-          // Return a formatted version but user can edit
           return 'My Lovable Project';
         }
-        // Convert slug to readable name: my-project-name -> My Project Name
-        return slug
-          .split('-')
-          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-          .join(' ');
+        return slug.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
       }
     }
     
-    // Fallback: extract something meaningful from the URL
     const cleanUrl = url.replace(/https?:\/\//, '');
     const firstPart = cleanUrl.split('/')[0].split('.')[0];
-    
-    // If it looks like a UUID, use default name
     const uuidPattern = /^[0-9a-f]{8}/i;
     if (uuidPattern.test(firstPart)) {
       return 'My Lovable Project';
@@ -107,19 +96,40 @@ export function ImportAppDialog({ open, onOpenChange }: ImportAppDialogProps) {
     const name = parseUrl(lovableUrl);
     setProjectName(name);
 
-    // Auto-detect integrations
+    // Auto-detect integrations from name
     const domain = `${name.toLowerCase().replace(/[^a-z0-9]/g, '-')}.lovable.app`;
     const analysis = analyzeAppForIntegrations(name, domain);
-    setDetectedIntegrations(analysis.detectedIntegrations);
-    setAppType(analysis.appType);
-    setConfidence(analysis.confidence);
+    setAutoDetected(analysis.detectedIntegrations);
+    setSelectedIntegrations(new Set(analysis.detectedIntegrations));
 
     // Fetch available integrations from DB
     const { data } = await supabase.from('integrations').select('*').order('category');
     setAvailableIntegrations(data || []);
     
     setIsLoading(false);
-    setStep('preview');
+    setStep('configure');
+  };
+
+  const handleCategoryChange = (category: string) => {
+    setSelectedCategory(category);
+    const bundle = APP_CATEGORY_BUNDLES[category];
+    if (bundle) {
+      // Merge category integrations with auto-detected ones
+      const newSet = new Set([...autoDetected, ...bundle.integrations]);
+      setSelectedIntegrations(newSet);
+    }
+  };
+
+  const toggleIntegration = (integrationId: string) => {
+    setSelectedIntegrations(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(integrationId)) {
+        newSet.delete(integrationId);
+      } else {
+        newSet.add(integrationId);
+      }
+      return newSet;
+    });
   };
 
   const handleImport = async () => {
@@ -142,7 +152,7 @@ export function ImportAppDialog({ open, onOpenChange }: ImportAppDialogProps) {
 
       const domain = `${projectName.toLowerCase().replace(/[^a-z0-9]/g, '-')}.lovable.app`;
       const { data: site, error: siteError } = await supabase.from('sites').insert({
-        name: projectName.charAt(0).toUpperCase() + projectName.slice(1).replace(/-/g, ' '),
+        name: projectName,
         domain,
         tenant_id: tenantId,
         status: 'demo',
@@ -160,8 +170,9 @@ export function ImportAppDialog({ open, onOpenChange }: ImportAppDialogProps) {
         user_id: user.id,
       });
 
-      // Auto-import ALL detected integrations
-      for (const integrationId of detectedIntegrations) {
+      // Import selected integrations
+      const integrationIds = Array.from(selectedIntegrations);
+      for (const integrationId of integrationIds) {
         const integration = availableIntegrations.find(i => i.id === integrationId);
         if (!integration) continue;
 
@@ -182,7 +193,7 @@ export function ImportAppDialog({ open, onOpenChange }: ImportAppDialogProps) {
 
       toast({ 
         title: 'App imported successfully!',
-        description: `${projectName} imported with ${detectedIntegrations.length} integrations auto-detected`,
+        description: `${projectName} imported with ${integrationIds.length} integrations`,
       });
 
       queryClient.invalidateQueries({ queryKey: ['sites'] });
@@ -192,7 +203,7 @@ export function ImportAppDialog({ open, onOpenChange }: ImportAppDialogProps) {
     } catch (error) {
       console.error('Import error:', error);
       toast({ title: 'Import failed', description: (error as Error).message, variant: 'destructive' });
-      setStep('preview');
+      setStep('configure');
     } finally {
       setIsLoading(false);
     }
@@ -202,14 +213,21 @@ export function ImportAppDialog({ open, onOpenChange }: ImportAppDialogProps) {
     setStep('url');
     setLovableUrl('');
     setProjectName('');
-    setDetectedIntegrations([]);
+    setSelectedCategory('other');
+    setSelectedIntegrations(new Set());
+    setAutoDetected([]);
   };
 
-  const matchedIntegrations = availableIntegrations.filter(i => detectedIntegrations.includes(i.id));
+  // Group integrations by category for display
+  const integrationsByCategory = availableIntegrations.reduce((acc, int) => {
+    if (!acc[int.category]) acc[int.category] = [];
+    acc[int.category].push(int);
+    return acc;
+  }, {} as Record<string, Integration[]>);
 
   return (
     <Dialog open={open} onOpenChange={(o) => { onOpenChange(o); if (!o) resetDialog(); }}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Import className="h-5 w-5 text-primary" />
@@ -217,7 +235,7 @@ export function ImportAppDialog({ open, onOpenChange }: ImportAppDialogProps) {
           </DialogTitle>
           <DialogDescription>
             {step === 'url' && 'Enter your Lovable project URL to import it into Control Center'}
-            {step === 'preview' && 'Review detected integrations before importing'}
+            {step === 'configure' && 'Configure project details and select integrations'}
             {step === 'importing' && 'Importing your app...'}
           </DialogDescription>
         </DialogHeader>
@@ -237,13 +255,14 @@ export function ImportAppDialog({ open, onOpenChange }: ImportAppDialogProps) {
             <Button onClick={handleUrlSubmit} className="w-full" disabled={isLoading}>
               {isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
               Analyze & Continue
+              <ChevronRight className="h-4 w-4 ml-2" />
             </Button>
           </div>
         )}
 
-        {step === 'preview' && (
+        {step === 'configure' && (
           <div className="space-y-4 py-4">
-            {/* Editable Project Name */}
+            {/* Project Name */}
             <div className="space-y-2">
               <Label htmlFor="project-name">Project Name</Label>
               <Input
@@ -252,55 +271,73 @@ export function ImportAppDialog({ open, onOpenChange }: ImportAppDialogProps) {
                 onChange={(e) => setProjectName(e.target.value)}
                 placeholder="Enter project name"
               />
-              <p className="text-xs text-muted-foreground">This name will be used to identify the site in Control Center</p>
             </div>
 
-            <div className="p-4 rounded-lg bg-primary/10 border border-primary/20">
-              <div className="flex items-start gap-3">
-                <ExternalLink className="h-5 w-5 text-primary mt-0.5" />
-                <div className="flex-1">
-                  <p className="font-semibold">{projectName || 'Untitled Project'}</p>
-                  <p className="text-xs text-muted-foreground truncate">{lovableUrl}</p>
-                  <div className="flex items-center gap-2 mt-2">
-                    <Badge variant="secondary" className="capitalize">{appType} app</Badge>
-                    <Badge variant="outline">{Math.round(confidence * 100)}% confidence</Badge>
-                  </div>
-                </div>
-              </div>
-            </div>
-
+            {/* App Category Selector */}
             <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-primary" />
-                <Label>Auto-Detected Integrations ({matchedIntegrations.length})</Label>
+              <Label>App Category</Label>
+              <RadioGroup value={selectedCategory} onValueChange={handleCategoryChange} className="grid gap-2">
+                {Object.entries(APP_CATEGORY_BUNDLES).map(([key, bundle]) => (
+                  <div key={key} className="flex items-center space-x-3 rounded-lg border p-3 hover:bg-muted/50 transition-colors">
+                    <RadioGroupItem value={key} id={key} />
+                    <Label htmlFor={key} className="flex-1 cursor-pointer">
+                      <span className="font-medium">{bundle.label}</span>
+                      <span className="text-xs text-muted-foreground block">{bundle.description}</span>
+                    </Label>
+                  </div>
+                ))}
+              </RadioGroup>
+            </div>
+
+            {/* Integration Selection */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-primary" />
+                  <Label>Select Integrations</Label>
+                </div>
+                <Badge variant="secondary">{selectedIntegrations.size} selected</Badge>
               </div>
               <ScrollArea className="h-[200px] rounded-md border p-3">
-                {matchedIntegrations.length > 0 ? (
-                  <div className="space-y-2">
-                    {matchedIntegrations.map((int) => (
-                      <div key={int.id} className="flex items-center gap-3 p-2 rounded-md bg-muted/50">
-                        <Check className="h-4 w-4 text-status-active" />
-                        <span className="text-lg">{int.icon}</span>
-                        <span className="text-sm font-medium">{int.name}</span>
-                        <Badge variant="secondary" className="ml-auto text-xs">{int.category}</Badge>
+                <div className="space-y-4">
+                  {Object.entries(integrationsByCategory).map(([category, integrations]) => (
+                    <div key={category}>
+                      <p className="text-xs font-medium text-muted-foreground uppercase mb-2">{category}</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {integrations.map((int) => (
+                          <div
+                            key={int.id}
+                            className={`flex items-center gap-2 p-2 rounded-md border cursor-pointer transition-colors ${
+                              selectedIntegrations.has(int.id)
+                                ? 'bg-primary/10 border-primary/30'
+                                : 'hover:bg-muted/50'
+                            }`}
+                            onClick={() => toggleIntegration(int.id)}
+                          >
+                            <Checkbox
+                              checked={selectedIntegrations.has(int.id)}
+                              onCheckedChange={() => toggleIntegration(int.id)}
+                            />
+                            <span className="text-base">{int.icon}</span>
+                            <span className="text-sm font-medium truncate">{int.name}</span>
+                            {autoDetected.includes(int.id) && (
+                              <Badge variant="outline" className="ml-auto text-[10px] px-1">auto</Badge>
+                            )}
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2 text-muted-foreground p-4">
-                    <AlertCircle className="h-4 w-4" />
-                    <span className="text-sm">No integrations detected</span>
-                  </div>
-                )}
+                    </div>
+                  ))}
+                </div>
               </ScrollArea>
-              <p className="text-xs text-muted-foreground">All detected integrations will be automatically imported with demo credentials</p>
+              <p className="text-xs text-muted-foreground">Select all integrations your app uses. Demo credentials will be auto-generated.</p>
             </div>
 
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => setStep('url')} className="flex-1">Back</Button>
-              <Button onClick={handleImport} className="flex-1">
+              <Button onClick={handleImport} className="flex-1" disabled={selectedIntegrations.size === 0}>
                 Import App
-                <Badge variant="secondary" className="ml-2">{matchedIntegrations.length}</Badge>
+                <Badge variant="secondary" className="ml-2">{selectedIntegrations.size}</Badge>
               </Button>
             </div>
           </div>
@@ -313,7 +350,7 @@ export function ImportAppDialog({ open, onOpenChange }: ImportAppDialogProps) {
             </div>
             <div className="text-center">
               <p className="font-medium">Importing {projectName}</p>
-              <p className="text-sm text-muted-foreground">Auto-importing {detectedIntegrations.length} integrations...</p>
+              <p className="text-sm text-muted-foreground">Creating {selectedIntegrations.size} integration credentials...</p>
             </div>
           </div>
         )}
