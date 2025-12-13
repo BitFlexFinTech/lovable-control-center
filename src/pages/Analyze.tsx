@@ -14,6 +14,7 @@ export interface AnalysisFinding {
   id: string;
   site_id: string;
   site_name: string;
+  site_color?: string;
   category: 'integration' | 'security' | 'bug' | 'feature' | 'compliance' | 'performance';
   severity: 'critical' | 'high' | 'medium' | 'low';
   title: string;

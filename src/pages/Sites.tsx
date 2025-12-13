@@ -24,10 +24,12 @@ import { MultiSiteBuilderDialog } from '@/components/sites/MultiSiteBuilderDialo
 import { SEOManagerDialog } from '@/components/sites/SEOManagerDialog';
 import { ImportAppDialog } from '@/components/sites/ImportAppDialog';
 import { EmbeddedSiteViewer } from '@/components/sites/EmbeddedSiteViewer';
+import { VerifyProjectsDialog } from '@/components/sites/VerifyProjectsDialog';
 import { PermissionGate } from '@/components/permissions/PermissionGate';
 import { useToast } from '@/hooks/use-toast';
 import { SiteOwnerType, SubscriptionTier } from '@/types/billing';
 import { Skeleton } from '@/components/ui/skeleton';
+import { LinkIcon } from 'lucide-react';
 
 const Sites = () => {
   const navigate = useNavigate();
@@ -43,6 +45,7 @@ const Sites = () => {
   const [isSEOManagerOpen, setIsSEOManagerOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [isEmbeddedViewerOpen, setIsEmbeddedViewerOpen] = useState(false);
+  const [isVerifyOpen, setIsVerifyOpen] = useState(false);
   const [selectedSite, setSelectedSite] = useState<typeof sites[0] | null>(null);
   const [isControlCenterLive, setIsControlCenterLive] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
