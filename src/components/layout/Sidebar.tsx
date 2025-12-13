@@ -20,7 +20,7 @@ import { cn } from '@/lib/utils';
 
 const mainNavItems = [
   { icon: LayoutDashboard, label: 'Overview', path: '/', tourId: 'nav-overview' },
-  { icon: CreditCard, label: 'NexusPay', path: '/nexuspay', tourId: 'nav-nexuspay' },
+  { icon: CreditCard, label: 'Billing', path: '/nexuspay', tourId: 'nav-billing' },
   { icon: Mail, label: 'Mail', path: '/mail', tourId: 'nav-mail' },
   { icon: KeyRound, label: 'Password Manager', path: '/passwords', tourId: 'nav-passwords' },
   { icon: Building2, label: 'Tenants', path: '/tenants', tourId: 'nav-tenants' },

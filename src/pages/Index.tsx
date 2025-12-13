@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { RefreshCw, Plus, Sparkles, Activity, Wifi, Globe, Layers, Import, ChevronDown } from 'lucide-react';
+import { RefreshCw, Plus, Sparkles, Activity, Wifi, Globe, Layers, Import, ChevronDown, Share2 } from 'lucide-react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { SiteAnalyticsCard } from '@/components/dashboard/SiteAnalyticsCard';
 import { AISuggestionBox } from '@/components/dashboard/AISuggestionBox';
@@ -18,6 +18,7 @@ import {
 } from '@/components/dashboard/RealTimeIndicator';
 import { LiveActivityFeed } from '@/components/dashboard/LiveActivityFeed';
 import { OnlineAdmins } from '@/components/dashboard/OnlineAdmins';
+import { SocialsWidget } from '@/components/dashboard/SocialsWidget';
 import {
   SiteAnalyticsCardSkeleton,
   MonitoringWidgetSkeleton,
@@ -258,6 +259,9 @@ const [isCreateSiteOpen, setIsCreateSiteOpen] = useState(false);
                 <LiveMetrics />
               </CardContent>
             </Card>
+
+            {/* Socials Widget */}
+            <SocialsWidget />
 
             {/* Activity Feed Card */}
             <Card className="opacity-0 animate-fade-in" style={{ animationDelay: '150ms' }}>

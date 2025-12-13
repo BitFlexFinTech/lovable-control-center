@@ -151,6 +151,60 @@ export type Database = {
           },
         ]
       }
+      connected_mail_accounts: {
+        Row: {
+          created_at: string | null
+          credentials_encrypted: string | null
+          display_name: string | null
+          email: string
+          id: string
+          imap_host: string | null
+          imap_port: number | null
+          is_connected: boolean | null
+          last_synced_at: string | null
+          mailboxes: Json | null
+          provider: string | null
+          smtp_host: string | null
+          smtp_port: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          credentials_encrypted?: string | null
+          display_name?: string | null
+          email: string
+          id?: string
+          imap_host?: string | null
+          imap_port?: number | null
+          is_connected?: boolean | null
+          last_synced_at?: string | null
+          mailboxes?: Json | null
+          provider?: string | null
+          smtp_host?: string | null
+          smtp_port?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          credentials_encrypted?: string | null
+          display_name?: string | null
+          email?: string
+          id?: string
+          imap_host?: string | null
+          imap_port?: number | null
+          is_connected?: boolean | null
+          last_synced_at?: string | null
+          mailboxes?: Json | null
+          provider?: string | null
+          smtp_host?: string | null
+          smtp_port?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       credentials: {
         Row: {
           additional_fields: Json | null
@@ -201,6 +255,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      currency_balances: {
+        Row: {
+          balance: number | null
+          created_at: string | null
+          currency: string
+          id: string
+          last_updated_at: string | null
+          symbol: string
+          user_id: string
+        }
+        Insert: {
+          balance?: number | null
+          created_at?: string | null
+          currency: string
+          id?: string
+          last_updated_at?: string | null
+          symbol: string
+          user_id: string
+        }
+        Update: {
+          balance?: number | null
+          created_at?: string | null
+          currency?: string
+          id?: string
+          last_updated_at?: string | null
+          symbol?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       email_accounts: {
         Row: {
@@ -361,6 +445,42 @@ export type Database = {
           id?: string
           is_enabled?: boolean | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      global_payment_providers: {
+        Row: {
+          created_at: string | null
+          credentials_encrypted: string | null
+          display_name: string | null
+          id: string
+          is_connected: boolean | null
+          is_sandbox: boolean | null
+          provider: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          credentials_encrypted?: string | null
+          display_name?: string | null
+          id?: string
+          is_connected?: boolean | null
+          is_sandbox?: boolean | null
+          provider: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          credentials_encrypted?: string | null
+          display_name?: string | null
+          id?: string
+          is_connected?: boolean | null
+          is_sandbox?: boolean | null
+          provider?: string
+          updated_at?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -748,6 +868,41 @@ export type Database = {
           },
         ]
       }
+      site_payment_settings: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_enabled: boolean | null
+          provider: string
+          site_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          provider: string
+          site_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          provider?: string
+          site_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "site_payment_settings_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sites: {
         Row: {
           app_color: string | null
@@ -870,6 +1025,54 @@ export type Database = {
           role?: Database["public"]["Enums"]["app_role"]
           tenant_id?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      user_social_accounts: {
+        Row: {
+          access_token_encrypted: string | null
+          connected_at: string | null
+          created_at: string | null
+          display_name: string | null
+          id: string
+          is_connected: boolean | null
+          last_synced_at: string | null
+          platform: string
+          profile_data: Json | null
+          profile_image_url: string | null
+          refresh_token_encrypted: string | null
+          user_id: string
+          username: string | null
+        }
+        Insert: {
+          access_token_encrypted?: string | null
+          connected_at?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          id?: string
+          is_connected?: boolean | null
+          last_synced_at?: string | null
+          platform: string
+          profile_data?: Json | null
+          profile_image_url?: string | null
+          refresh_token_encrypted?: string | null
+          user_id: string
+          username?: string | null
+        }
+        Update: {
+          access_token_encrypted?: string | null
+          connected_at?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          id?: string
+          is_connected?: boolean | null
+          last_synced_at?: string | null
+          platform?: string
+          profile_data?: Json | null
+          profile_image_url?: string | null
+          refresh_token_encrypted?: string | null
+          user_id?: string
+          username?: string | null
         }
         Relationships: []
       }
