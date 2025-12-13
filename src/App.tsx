@@ -33,6 +33,7 @@ import PasswordManager from "./pages/PasswordManager";
 import GuidedTour from "./pages/GuidedTour";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import NexusPay from "./pages/NexusPay";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -124,6 +125,11 @@ const App = () => (
                                 <Route path="/guided-tour" element={
                                   <ProtectedRoute>
                                     <GuidedTour />
+                                  </ProtectedRoute>
+                                } />
+                                <Route path="/nexuspay" element={
+                                  <ProtectedRoute>
+                                    <NexusPay />
                                   </ProtectedRoute>
                                 } />
                                 <Route path="*" element={<NotFound />} />
