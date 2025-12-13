@@ -13,7 +13,8 @@ import {
   Share2,
   KeyRound,
   Sparkles,
-  CreditCard
+  CreditCard,
+  Search
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { cn } from '@/lib/utils';
@@ -29,6 +30,7 @@ const mainNavItems = [
 ];
 
 const configNavItems = [
+  { icon: Search, label: 'Analyze', path: '/analyze', tourId: 'nav-analyze' },
   { icon: Shield, label: 'Roles', path: '/roles', tourId: 'nav-roles' },
   { icon: Plug, label: 'Integrations', path: '/integrations', tourId: 'nav-integrations' },
   { icon: Share2, label: 'Social Prefill', path: '/social-prefill', tourId: 'nav-social-prefill' },

@@ -44,6 +44,45 @@ export type Database = {
         }
         Relationships: []
       }
+      analysis_runs: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          created_by: string | null
+          findings: Json | null
+          id: string
+          implemented_actions: Json | null
+          severity_counts: Json | null
+          sites_analyzed: number | null
+          started_at: string | null
+          status: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          findings?: Json | null
+          id?: string
+          implemented_actions?: Json | null
+          severity_counts?: Json | null
+          sites_analyzed?: number | null
+          started_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          findings?: Json | null
+          id?: string
+          implemented_actions?: Json | null
+          severity_counts?: Json | null
+          sites_analyzed?: number | null
+          started_at?: string | null
+          status?: string | null
+        }
+        Relationships: []
+      }
       analytics_events: {
         Row: {
           created_at: string | null
