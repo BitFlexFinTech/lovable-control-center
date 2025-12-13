@@ -35,7 +35,8 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Search,
-  Filter
+  Filter,
+  Wallet
 } from 'lucide-react';
 import { useSites } from '@/hooks/useDashboardData';
 import { 
@@ -53,6 +54,8 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+import { CurrencyBalanceCards } from '@/components/billing/CurrencyBalanceCards';
+import { SitePaymentToggles } from '@/components/billing/SitePaymentToggles';
 
 const gatewayIcons: Record<PaymentGateway, React.ReactNode> = {
   stripe: <CreditCard className="h-4 w-4" />,
@@ -220,6 +223,9 @@ const NexusPay = () => {
           </Card>
         )}
 
+        {/* Currency Balance Cards */}
+        <CurrencyBalanceCards />
+
         {/* KPI Cards */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card>
@@ -276,6 +282,11 @@ const NexusPay = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Per-Site Payment Toggles */}
+        {selectedSiteId !== 'all' && (
+          <SitePaymentToggles siteId={selectedSiteId} />
+        )}
 
         {/* Main Content */}
         <Tabs defaultValue="transactions" className="space-y-4">

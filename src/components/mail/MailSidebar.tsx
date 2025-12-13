@@ -46,6 +46,7 @@ interface MailSidebarProps {
   onCompose: () => void;
   onCreateAccount: () => void;
   onEmailSync?: () => void;
+  onConnectMacMail?: () => void;
   // Connected providers
   connectedProviders?: EmailProvider[];
   // Counts
@@ -82,6 +83,7 @@ export function MailSidebar({
   onCompose,
   onCreateAccount,
   onEmailSync,
+  onConnectMacMail,
   connectedProviders = [
     { id: 'google', name: 'Google', connected: true, unreadCount: 126 },
     { id: 'outlook', name: 'Tadii | Bitflex®', connected: true, unreadCount: 98 },
@@ -129,6 +131,17 @@ export function MailSidebar({
           >
             <RefreshCw className="h-4 w-4" />
             Sync Email
+          </Button>
+        )}
+        {onConnectMacMail && (
+          <Button 
+            variant="outline"
+            onClick={onConnectMacMail}
+            className="w-full gap-2"
+            size="sm"
+          >
+            <Mail className="h-4 w-4" />
+            Connect Mac Mail
           </Button>
         )}
       </div>
