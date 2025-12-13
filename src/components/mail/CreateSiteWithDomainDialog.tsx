@@ -32,9 +32,12 @@ import { useToast } from '@/hooks/use-toast';
 import { useCart } from '@/contexts/CartContext';
 import { useIntegrations } from '@/contexts/IntegrationsContext';
 import { useCreateSite } from '@/hooks/useSupabaseSites';
+import { useBulkCreateEmailAccounts } from '@/hooks/useSupabaseEmailAccounts';
+import { useBulkCreateCredentials } from '@/hooks/useSupabaseCredentials';
 import { EmailAccount } from '@/types/mail';
 import { LinkedApp } from '@/types';
 import { analyzeAppForIntegrations, POPULAR_TLDS } from '@/utils/integrationAnalyzer';
+import { generateStrongPassword } from '@/utils/integrationAccountGenerator';
 import { cn } from '@/lib/utils';
 
 interface CreateSiteWithDomainDialogProps {
@@ -76,6 +79,8 @@ export function CreateSiteWithDomainDialog({
   const { addToCart } = useCart();
   const { importIntegrationsForApp, getNextAppColor } = useIntegrations();
   const createSiteMutation = useCreateSite();
+  const bulkCreateEmailAccounts = useBulkCreateEmailAccounts();
+  const bulkCreateCredentials = useBulkCreateCredentials();
   
   const [domain, setDomain] = useState('');
   const [step, setStep] = useState<Step>('input');
@@ -183,10 +188,36 @@ export function CreateSiteWithDomainDialog({
         linkedAt: new Date().toISOString(),
       };
       
-      // Import integrations for this app
+      // Import integrations for this app (in-memory context)
       importIntegrationsForApp(analysis.detectedIntegrations, appData);
       
-      // Create email accounts
+      // Persist email accounts to Supabase
+      const emailAccountsData = DEFAULT_EMAIL_ACCOUNTS.map(name => ({
+        site_id: createdSite.id,
+        tenant_id: tenantId || null,
+        name: name.charAt(0).toUpperCase() + name.slice(1),
+        email: `${name}@${selectedDomain.domain}`,
+        type: name,
+        password: generateStrongPassword(),
+      }));
+      
+      await bulkCreateEmailAccounts.mutateAsync(emailAccountsData);
+      
+      // Persist integration credentials to Supabase
+      const credentialsData = analysis.detectedIntegrations.map(integrationId => ({
+        site_id: createdSite.id,
+        integration_id: integrationId,
+        email: `${integrationId}@${selectedDomain.domain}`,
+        password: generateStrongPassword(),
+        status: 'demo',
+        additional_fields: {},
+      }));
+      
+      if (credentialsData.length > 0) {
+        await bulkCreateCredentials.mutateAsync(credentialsData);
+      }
+      
+      // Create email accounts for callback
       const emailAccounts: EmailAccount[] = DEFAULT_EMAIL_ACCOUNTS.map((name, index) => ({
         id: `acc-${Date.now()}-${index}`,
         tenantId,
