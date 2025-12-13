@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { RefreshCw, Plus, Sparkles, Activity, Wifi } from 'lucide-react';
+import { RefreshCw, Plus, Sparkles, Activity, Wifi, Globe, Layers, Import, ChevronDown } from 'lucide-react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { SiteAnalyticsCard } from '@/components/dashboard/SiteAnalyticsCard';
 import { AISuggestionBox } from '@/components/dashboard/AISuggestionBox';
@@ -27,7 +27,16 @@ import {
   AISummarySkeleton,
 } from '@/components/dashboard/DashboardSkeletons';
 import { CreateSiteWithDomainDialog } from '@/components/mail/CreateSiteWithDomainDialog';
+import { ImportAppDialog } from '@/components/sites/ImportAppDialog';
+import { MultiSiteBuilderDialog } from '@/components/sites/MultiSiteBuilderDialog';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -50,7 +59,9 @@ const Index = () => {
   const [suggestions, setSuggestions] = useState<AISuggestion[]>([]);
   const [previewSuggestion, setPreviewSuggestion] = useState<AISuggestion | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-  const [isCreateSiteOpen, setIsCreateSiteOpen] = useState(false);
+const [isCreateSiteOpen, setIsCreateSiteOpen] = useState(false);
+  const [isImportOpen, setIsImportOpen] = useState(false);
+  const [isMultiSiteOpen, setIsMultiSiteOpen] = useState(false);
 
   // Sync suggestions from query to local state for mutations
   useState(() => {
@@ -165,10 +176,30 @@ const Index = () => {
               <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
               Sync All
             </Button>
-            <Button size="sm" className="gap-1.5" onClick={() => setIsCreateSiteOpen(true)}>
-              <Plus className="h-3.5 w-3.5" />
-              Add Site
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" className="gap-1.5">
+                  <Globe className="h-3.5 w-3.5" />
+                  Create Site
+                  <ChevronDown className="h-3 w-3 ml-1" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onClick={() => setIsCreateSiteOpen(true)}>
+                  <Globe className="h-4 w-4 mr-2" />
+                  Single Site
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setIsMultiSiteOpen(true)}>
+                  <Layers className="h-4 w-4 mr-2" />
+                  Multi-Site Builder
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setIsImportOpen(true)}>
+                  <Import className="h-4 w-4 mr-2" />
+                  Import from Lovable
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </div>
@@ -363,6 +394,19 @@ const Index = () => {
           setIsCreateSiteOpen(false);
         }}
         tenantId={currentTenant?.id || ''}
+      />
+
+      {/* Import App Dialog */}
+      <ImportAppDialog 
+        open={isImportOpen} 
+        onOpenChange={setIsImportOpen} 
+      />
+
+      {/* Multi-Site Builder Dialog */}
+      <MultiSiteBuilderDialog 
+        isOpen={isMultiSiteOpen} 
+        onClose={() => setIsMultiSiteOpen(false)} 
+        onBuild={() => refresh()} 
       />
     </DashboardLayout>
   );
