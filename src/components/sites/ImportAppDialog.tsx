@@ -52,6 +52,7 @@ export function ImportAppDialog({ open, onOpenChange }: ImportAppDialogProps) {
   const [step, setStep] = useState<'url' | 'importing'>('url');
   const [lovableUrl, setLovableUrl] = useState('');
   const [projectName, setProjectName] = useState('');
+  const [userEditedName, setUserEditedName] = useState(false);
   const [githubUrl, setGithubUrl] = useState('');
   const [packageJsonContent, setPackageJsonContent] = useState('');
   const [selectedIntegrations, setSelectedIntegrations] = useState<Set<string>>(new Set());
@@ -129,8 +130,12 @@ export function ImportAppDialog({ open, onOpenChange }: ImportAppDialogProps) {
       setSelectedIntegrations(new Set(data.detectedIntegrations));
       setDetectionMethod('github');
       
-      if (data.projectName && projectName === '') {
-        setProjectName(data.projectName);
+      // Prioritize GitHub-detected name over URL-parsed fallback (unless user manually edited)
+      if (!userEditedName) {
+        const githubName = data.projectName || data.repoName?.replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
+        if (githubName) {
+          setProjectName(githubName);
+        }
       }
 
       await fetchAvailableIntegrations();
@@ -290,6 +295,7 @@ export function ImportAppDialog({ open, onOpenChange }: ImportAppDialogProps) {
     setStep('url');
     setLovableUrl('');
     setProjectName('');
+    setUserEditedName(false);
     setGithubUrl('');
     setPackageJsonContent('');
     setSelectedIntegrations(new Set());
@@ -345,7 +351,10 @@ export function ImportAppDialog({ open, onOpenChange }: ImportAppDialogProps) {
                 id="project-name"
                 placeholder="My Awesome App"
                 value={projectName}
-                onChange={(e) => setProjectName(e.target.value)}
+                onChange={(e) => {
+                  setProjectName(e.target.value);
+                  setUserEditedName(true);
+                }}
               />
             </div>
 
