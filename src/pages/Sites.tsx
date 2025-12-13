@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MoreHorizontal, ExternalLink, Settings, RefreshCw, Search, Globe, Rocket, ArrowRight, CreditCard, BarChart3, Crown, User, Layers, Search as SearchIcon, ChevronDown, Import, Loader2, Eye, LinkIcon, AlertCircle } from 'lucide-react';
+import { MoreHorizontal, ExternalLink, Settings, RefreshCw, Search, Globe, Rocket, ArrowRight, CreditCard, BarChart3, Crown, User, Layers, Search as SearchIcon, ChevronDown, Import, Loader2, Eye, Link as LinkIcon, AlertCircle } from 'lucide-react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { StatusPill } from '@/components/dashboard/StatusPill';
@@ -29,7 +29,7 @@ import { PermissionGate } from '@/components/permissions/PermissionGate';
 import { useToast } from '@/hooks/use-toast';
 import { SiteOwnerType, SubscriptionTier } from '@/types/billing';
 import { Skeleton } from '@/components/ui/skeleton';
-import { LinkIcon } from 'lucide-react';
+
 
 const Sites = () => {
   const navigate = useNavigate();

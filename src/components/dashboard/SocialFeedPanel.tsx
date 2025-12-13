@@ -189,7 +189,7 @@ export function SocialFeedPanel({ className }: { className?: string }) {
       await connectAccount.mutateAsync({
         platform: activePlatform,
         username: `demo_${activePlatform}_user`,
-        display_name: `Demo ${activePlatformConfig.name} User`,
+        displayName: `Demo ${activePlatformConfig.name} User`,
       });
       toast({
         title: `${activePlatformConfig.name} Connected`,
