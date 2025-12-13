@@ -13,7 +13,8 @@ import {
   Mail,
   Share2,
   KeyRound,
-  Sparkles
+  Sparkles,
+  CreditCard
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { cn } from '@/lib/utils';
@@ -22,6 +23,7 @@ import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/co
 
 const mainNavItems = [
   { icon: LayoutDashboard, label: 'Overview', path: '/' },
+  { icon: CreditCard, label: 'NexusPay', path: '/nexuspay' },
   { icon: Mail, label: 'Mail', path: '/mail' },
   { icon: KeyRound, label: 'Password Manager', path: '/passwords' },
   { icon: Building2, label: 'Tenants', path: '/tenants' },
