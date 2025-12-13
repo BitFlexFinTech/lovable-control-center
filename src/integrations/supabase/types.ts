@@ -202,6 +202,57 @@ export type Database = {
           },
         ]
       }
+      email_accounts: {
+        Row: {
+          created_at: string | null
+          email: string
+          id: string
+          name: string
+          password: string | null
+          site_id: string
+          tenant_id: string | null
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          id?: string
+          name: string
+          password?: string | null
+          site_id: string
+          tenant_id?: string | null
+          type?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          id?: string
+          name?: string
+          password?: string | null
+          site_id?: string
+          tenant_id?: string | null
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_accounts_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_accounts_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       emails: {
         Row: {
           account_id: string
@@ -286,6 +337,72 @@ export type Database = {
         }
         Relationships: []
       }
+      feature_toggles: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          feature_key: string
+          id: string
+          is_enabled: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          feature_key: string
+          id?: string
+          is_enabled?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          feature_key?: string
+          id?: string
+          is_enabled?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      godmode_sessions: {
+        Row: {
+          actions_log: Json | null
+          admin_user_id: string
+          ended_at: string | null
+          expires_at: string
+          id: string
+          ip_address: string | null
+          is_active: boolean | null
+          reason: string
+          started_at: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          actions_log?: Json | null
+          admin_user_id: string
+          ended_at?: string | null
+          expires_at: string
+          id?: string
+          ip_address?: string | null
+          is_active?: boolean | null
+          reason: string
+          started_at?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          actions_log?: Json | null
+          admin_user_id?: string
+          ended_at?: string | null
+          expires_at?: string
+          id?: string
+          ip_address?: string | null
+          is_active?: boolean | null
+          reason?: string
+          started_at?: string | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       imported_apps: {
         Row: {
           id: string
@@ -351,6 +468,65 @@ export type Database = {
         }
         Relationships: []
       }
+      nexuspay_transactions: {
+        Row: {
+          amount_usd: number
+          created_at: string | null
+          crypto_network: string | null
+          customer_email: string | null
+          customer_name: string | null
+          fees_usd: number | null
+          gateway_ref_id: string
+          gateway_source: Database["public"]["Enums"]["payment_gateway"]
+          id: string
+          metadata: Json | null
+          native_amount: number
+          site_id: string
+          status: Database["public"]["Enums"]["transaction_status"] | null
+          updated_at: string | null
+        }
+        Insert: {
+          amount_usd: number
+          created_at?: string | null
+          crypto_network?: string | null
+          customer_email?: string | null
+          customer_name?: string | null
+          fees_usd?: number | null
+          gateway_ref_id: string
+          gateway_source: Database["public"]["Enums"]["payment_gateway"]
+          id?: string
+          metadata?: Json | null
+          native_amount: number
+          site_id: string
+          status?: Database["public"]["Enums"]["transaction_status"] | null
+          updated_at?: string | null
+        }
+        Update: {
+          amount_usd?: number
+          created_at?: string | null
+          crypto_network?: string | null
+          customer_email?: string | null
+          customer_name?: string | null
+          fees_usd?: number | null
+          gateway_ref_id?: string
+          gateway_source?: Database["public"]["Enums"]["payment_gateway"]
+          id?: string
+          metadata?: Json | null
+          native_amount?: number
+          site_id?: string
+          status?: Database["public"]["Enums"]["transaction_status"] | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nexuspay_transactions_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           action_url: string | null
@@ -383,6 +559,53 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      payment_providers: {
+        Row: {
+          created_at: string | null
+          credentials_encrypted: string | null
+          id: string
+          is_connected: boolean | null
+          is_sandbox: boolean | null
+          last_synced_at: string | null
+          provider: Database["public"]["Enums"]["payment_gateway"]
+          site_id: string
+          updated_at: string | null
+          webhook_secret: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          credentials_encrypted?: string | null
+          id?: string
+          is_connected?: boolean | null
+          is_sandbox?: boolean | null
+          last_synced_at?: string | null
+          provider: Database["public"]["Enums"]["payment_gateway"]
+          site_id: string
+          updated_at?: string | null
+          webhook_secret?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          credentials_encrypted?: string | null
+          id?: string
+          is_connected?: boolean | null
+          is_sandbox?: boolean | null
+          last_synced_at?: string | null
+          provider?: Database["public"]["Enums"]["payment_gateway"]
+          site_id?: string
+          updated_at?: string | null
+          webhook_secret?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_providers_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -447,6 +670,39 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      security_scans: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          findings: Json | null
+          id: string
+          scan_type: string
+          severity_counts: Json | null
+          started_at: string | null
+          status: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          findings?: Json | null
+          id?: string
+          scan_type: string
+          severity_counts?: Json | null
+          started_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          findings?: Json | null
+          id?: string
+          scan_type?: string
+          severity_counts?: Json | null
+          started_at?: string | null
+          status?: string | null
         }
         Relationships: []
       }
@@ -685,6 +941,13 @@ export type Database = {
     }
     Enums: {
       app_role: "super_admin" | "admin" | "editor"
+      payment_gateway: "stripe" | "paypal" | "btc" | "usdt" | "eth"
+      transaction_status:
+        | "pending"
+        | "confirmed"
+        | "failed"
+        | "refunded"
+        | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -813,6 +1076,14 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["super_admin", "admin", "editor"],
+      payment_gateway: ["stripe", "paypal", "btc", "usdt", "eth"],
+      transaction_status: [
+        "pending",
+        "confirmed",
+        "failed",
+        "refunded",
+        "cancelled",
+      ],
     },
   },
 } as const
