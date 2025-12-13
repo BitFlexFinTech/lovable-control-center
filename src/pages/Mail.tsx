@@ -10,6 +10,7 @@ import { MailDetail } from '@/components/mail/MailDetail';
 import { ComposeDialog } from '@/components/mail/ComposeDialog';
 import { CreateAccountDialog } from '@/components/mail/CreateAccountDialog';
 import { EmailSyncDialog } from '@/components/mail/EmailSyncDialog';
+import { ConnectMacMailDialog } from '@/components/mail/ConnectMacMailDialog';
 import { VipManager, VipSender } from '@/components/mail/VipManager';
 import { Mail, MailFolder, EmailAccount } from '@/types/mail';
 import { mails as initialMails, emailAccounts as initialAccounts } from '@/data/mail-data';
@@ -29,6 +30,7 @@ export default function MailPage() {
   const [isComposeOpen, setIsComposeOpen] = useState(false);
   const [isCreateAccountOpen, setIsCreateAccountOpen] = useState(false);
   const [isEmailSyncOpen, setIsEmailSyncOpen] = useState(false);
+  const [isMacMailOpen, setIsMacMailOpen] = useState(false);
   const [isVipManagerOpen, setIsVipManagerOpen] = useState(false);
   const [composeMode, setComposeMode] = useState<'compose' | 'reply' | 'forward'>('compose');
   const [composeInitial, setComposeInitial] = useState({ to: '', subject: '', body: '' });
@@ -155,7 +157,7 @@ export default function MailPage() {
         </div>
 
         <div className="flex flex-1 overflow-hidden">
-          <MailSidebar selectedFolder={selectedFolder} onFolderChange={setSelectedFolder} folderCounts={folderCounts} accounts={accounts} selectedAccount={selectedAccount} onAccountChange={setSelectedAccount} onCompose={handleCompose} onCreateAccount={() => setIsCreateAccountOpen(true)} onEmailSync={() => setIsEmailSyncOpen(true)} onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop} dragOverTarget={dragOverTarget} vipCount={vipSenders.length} />
+          <MailSidebar selectedFolder={selectedFolder} onFolderChange={setSelectedFolder} folderCounts={folderCounts} accounts={accounts} selectedAccount={selectedAccount} onAccountChange={setSelectedAccount} onCompose={handleCompose} onCreateAccount={() => setIsCreateAccountOpen(true)} onEmailSync={() => setIsEmailSyncOpen(true)} onConnectMacMail={() => setIsMacMailOpen(true)} onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop} dragOverTarget={dragOverTarget} vipCount={vipSenders.length} />
           
           <div className="w-80 border-r border-border flex flex-col">
             <div className="p-3 border-b border-border">
@@ -172,6 +174,7 @@ export default function MailPage() {
       <ComposeDialog isOpen={isComposeOpen} onClose={() => setIsComposeOpen(false)} onSend={handleSendEmail} initialTo={composeInitial.to} initialSubject={composeInitial.subject} initialBody={composeInitial.body} mode={composeMode} />
       <CreateAccountDialog isOpen={isCreateAccountOpen} onClose={() => setIsCreateAccountOpen(false)} onCreateAccount={handleCreateAccount} domain={domain} />
       <EmailSyncDialog isOpen={isEmailSyncOpen} onClose={() => setIsEmailSyncOpen(false)} onConnect={() => { toast({ title: 'Email synced' }); setIsEmailSyncOpen(false); }} />
+      <ConnectMacMailDialog isOpen={isMacMailOpen} onClose={() => setIsMacMailOpen(false)} />
       <VipManager isOpen={isVipManagerOpen} onClose={() => setIsVipManagerOpen(false)} vipSenders={vipSenders} onAddVip={handleAddVip} onRemoveVip={handleRemoveVip} recentSenders={recentSenders} />
     </DashboardLayout>
   );

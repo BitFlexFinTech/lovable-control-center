@@ -165,8 +165,8 @@ const NexusPay = () => {
         {/* Header */}
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">NexusPay</h1>
-            <p className="text-muted-foreground text-sm">Unified payment management across all sites</p>
+            <h1 className="text-2xl font-semibold tracking-tight">Billing Management</h1>
+            <p className="text-muted-foreground text-sm">Unified payment & currency management across all sites</p>
           </div>
           <div className="flex items-center gap-3">
             <Select value={selectedSiteId} onValueChange={setSelectedSiteId}>

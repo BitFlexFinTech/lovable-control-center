@@ -3,14 +3,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Import, Loader2, Check, ExternalLink } from 'lucide-react';
+import { Import, Loader2, Check, ExternalLink, Sparkles, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
+import { analyzeAppForIntegrations } from '@/utils/integrationAnalyzer';
 
 interface ImportAppDialogProps {
   open: boolean;
@@ -45,28 +45,25 @@ function generatePassword(): string {
 export function ImportAppDialog({ open, onOpenChange }: ImportAppDialogProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [step, setStep] = useState<'url' | 'integrations' | 'importing'>('url');
+  const [step, setStep] = useState<'url' | 'preview' | 'importing'>('url');
   const [lovableUrl, setLovableUrl] = useState('');
   const [projectName, setProjectName] = useState('');
-  const [integrations, setIntegrations] = useState<Integration[]>([]);
-  const [selectedIntegrations, setSelectedIntegrations] = useState<string[]>([]);
+  const [detectedIntegrations, setDetectedIntegrations] = useState<string[]>([]);
+  const [appType, setAppType] = useState('');
+  const [confidence, setConfidence] = useState(0);
+  const [availableIntegrations, setAvailableIntegrations] = useState<Integration[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Extract project name from Lovable URL
   const parseUrl = (url: string) => {
-    // Handle various Lovable URL formats
     const patterns = [
       /lovable\.dev\/projects\/([^\/\?]+)/,
       /([^\/\.]+)\.lovable\.app/,
       /lovable\.app\/([^\/\?]+)/
     ];
-    
     for (const pattern of patterns) {
       const match = url.match(pattern);
       if (match) return match[1];
     }
-    
-    // Fallback: just use the URL as-is for the name
     return url.replace(/https?:\/\//, '').split('/')[0].split('.')[0];
   };
 
@@ -76,15 +73,23 @@ export function ImportAppDialog({ open, onOpenChange }: ImportAppDialogProps) {
       return;
     }
 
+    setIsLoading(true);
     const name = parseUrl(lovableUrl);
     setProjectName(name);
 
-    // Fetch available integrations
-    setIsLoading(true);
+    // Auto-detect integrations
+    const domain = `${name.toLowerCase().replace(/[^a-z0-9]/g, '-')}.lovable.app`;
+    const analysis = analyzeAppForIntegrations(name, domain);
+    setDetectedIntegrations(analysis.detectedIntegrations);
+    setAppType(analysis.appType);
+    setConfidence(analysis.confidence);
+
+    // Fetch available integrations from DB
     const { data } = await supabase.from('integrations').select('*').order('category');
-    setIntegrations(data || []);
+    setAvailableIntegrations(data || []);
+    
     setIsLoading(false);
-    setStep('integrations');
+    setStep('preview');
   };
 
   const handleImport = async () => {
@@ -97,20 +102,14 @@ export function ImportAppDialog({ open, onOpenChange }: ImportAppDialogProps) {
     setIsLoading(true);
 
     try {
-      // Get next available color
       const { data: existingSites } = await supabase.from('sites').select('app_color');
       const usedColors = existingSites?.map(s => s.app_color) || [];
       const availableColor = APP_COLORS.find(c => !usedColors.includes(c)) || APP_COLORS[0];
 
-      // Get default tenant
       const { data: tenants } = await supabase.from('tenants').select('id').limit(1);
       const tenantId = tenants?.[0]?.id;
+      if (!tenantId) throw new Error('No tenant found');
 
-      if (!tenantId) {
-        throw new Error('No tenant found');
-      }
-
-      // Create the site
       const domain = `${projectName.toLowerCase().replace(/[^a-z0-9]/g, '-')}.lovable.app`;
       const { data: site, error: siteError } = await supabase.from('sites').insert({
         name: projectName.charAt(0).toUpperCase() + projectName.slice(1).replace(/-/g, ' '),
@@ -124,7 +123,6 @@ export function ImportAppDialog({ open, onOpenChange }: ImportAppDialogProps) {
 
       if (siteError) throw siteError;
 
-      // Create imported_apps record
       await supabase.from('imported_apps').insert({
         site_id: site.id,
         lovable_url: lovableUrl,
@@ -132,19 +130,17 @@ export function ImportAppDialog({ open, onOpenChange }: ImportAppDialogProps) {
         user_id: user.id,
       });
 
-      // Create site_integrations and credentials for selected integrations
-      for (const integrationId of selectedIntegrations) {
-        const integration = integrations.find(i => i.id === integrationId);
+      // Auto-import ALL detected integrations
+      for (const integrationId of detectedIntegrations) {
+        const integration = availableIntegrations.find(i => i.id === integrationId);
         if (!integration) continue;
 
-        // Link integration to site
         await supabase.from('site_integrations').insert({
           site_id: site.id,
           integration_id: integrationId,
-          status: 'pending',
+          status: 'imported',
         });
 
-        // Generate demo credentials
         await supabase.from('credentials').insert({
           site_id: site.id,
           integration_id: integrationId,
@@ -156,20 +152,17 @@ export function ImportAppDialog({ open, onOpenChange }: ImportAppDialogProps) {
 
       toast({ 
         title: 'App imported successfully!',
-        description: `${projectName} has been added with ${selectedIntegrations.length} integrations`,
+        description: `${projectName} imported with ${detectedIntegrations.length} integrations auto-detected`,
       });
 
       queryClient.invalidateQueries({ queryKey: ['sites'] });
+      queryClient.invalidateQueries({ queryKey: ['integrations'] });
       onOpenChange(false);
       resetDialog();
     } catch (error) {
       console.error('Import error:', error);
-      toast({ 
-        title: 'Import failed', 
-        description: (error as Error).message,
-        variant: 'destructive' 
-      });
-      setStep('integrations');
+      toast({ title: 'Import failed', description: (error as Error).message, variant: 'destructive' });
+      setStep('preview');
     } finally {
       setIsLoading(false);
     }
@@ -179,21 +172,10 @@ export function ImportAppDialog({ open, onOpenChange }: ImportAppDialogProps) {
     setStep('url');
     setLovableUrl('');
     setProjectName('');
-    setSelectedIntegrations([]);
+    setDetectedIntegrations([]);
   };
 
-  const toggleIntegration = (id: string) => {
-    setSelectedIntegrations(prev => 
-      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
-    );
-  };
-
-  // Group integrations by category
-  const groupedIntegrations = integrations.reduce((acc, int) => {
-    if (!acc[int.category]) acc[int.category] = [];
-    acc[int.category].push(int);
-    return acc;
-  }, {} as Record<string, Integration[]>);
+  const matchedIntegrations = availableIntegrations.filter(i => detectedIntegrations.includes(i.id));
 
   return (
     <Dialog open={open} onOpenChange={(o) => { onOpenChange(o); if (!o) resetDialog(); }}>
@@ -205,7 +187,7 @@ export function ImportAppDialog({ open, onOpenChange }: ImportAppDialogProps) {
           </DialogTitle>
           <DialogDescription>
             {step === 'url' && 'Enter your Lovable project URL to import it into Control Center'}
-            {step === 'integrations' && 'Select the integrations your app uses'}
+            {step === 'preview' && 'Review detected integrations before importing'}
             {step === 'importing' && 'Importing your app...'}
           </DialogDescription>
         </DialogHeader>
@@ -216,68 +198,67 @@ export function ImportAppDialog({ open, onOpenChange }: ImportAppDialogProps) {
               <Label htmlFor="lovable-url">Lovable Project URL</Label>
               <Input
                 id="lovable-url"
-                placeholder="https://myproject.lovable.app or https://lovable.dev/projects/my-project"
+                placeholder="https://lovable.dev/projects/your-project-id"
                 value={lovableUrl}
                 onChange={(e) => setLovableUrl(e.target.value)}
               />
-              <p className="text-xs text-muted-foreground">
-                Paste the URL from your Lovable project
-              </p>
+              <p className="text-xs text-muted-foreground">Paste the URL from your Lovable project</p>
             </div>
             <Button onClick={handleUrlSubmit} className="w-full" disabled={isLoading}>
               {isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              Continue
+              Analyze & Continue
             </Button>
           </div>
         )}
 
-        {step === 'integrations' && (
+        {step === 'preview' && (
           <div className="space-y-4 py-4">
-            <div className="flex items-center gap-2 p-3 rounded-lg bg-primary/10 border border-primary/20">
-              <ExternalLink className="h-4 w-4 text-primary" />
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-sm truncate">{projectName}</p>
-                <p className="text-xs text-muted-foreground truncate">{lovableUrl}</p>
+            <div className="p-4 rounded-lg bg-primary/10 border border-primary/20">
+              <div className="flex items-start gap-3">
+                <ExternalLink className="h-5 w-5 text-primary mt-0.5" />
+                <div className="flex-1">
+                  <p className="font-semibold">{projectName}</p>
+                  <p className="text-xs text-muted-foreground truncate">{lovableUrl}</p>
+                  <div className="flex items-center gap-2 mt-2">
+                    <Badge variant="secondary" className="capitalize">{appType} app</Badge>
+                    <Badge variant="outline">{Math.round(confidence * 100)}% confidence</Badge>
+                  </div>
+                </div>
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label>Select Integrations</Label>
-              <ScrollArea className="h-[280px] rounded-md border p-3">
-                {Object.entries(groupedIntegrations).map(([category, ints]) => (
-                  <div key={category} className="mb-4 last:mb-0">
-                    <p className="text-xs font-medium text-muted-foreground mb-2">{category}</p>
-                    <div className="space-y-1">
-                      {ints.map((int) => (
-                        <label
-                          key={int.id}
-                          className="flex items-center gap-3 p-2 rounded-md hover:bg-muted/50 cursor-pointer"
-                        >
-                          <Checkbox
-                            checked={selectedIntegrations.includes(int.id)}
-                            onCheckedChange={() => toggleIntegration(int.id)}
-                          />
-                          <span className="text-lg">{int.icon}</span>
-                          <span className="text-sm">{int.name}</span>
-                        </label>
-                      ))}
-                    </div>
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                <Label>Auto-Detected Integrations ({matchedIntegrations.length})</Label>
+              </div>
+              <ScrollArea className="h-[200px] rounded-md border p-3">
+                {matchedIntegrations.length > 0 ? (
+                  <div className="space-y-2">
+                    {matchedIntegrations.map((int) => (
+                      <div key={int.id} className="flex items-center gap-3 p-2 rounded-md bg-muted/50">
+                        <Check className="h-4 w-4 text-status-active" />
+                        <span className="text-lg">{int.icon}</span>
+                        <span className="text-sm font-medium">{int.name}</span>
+                        <Badge variant="secondary" className="ml-auto text-xs">{int.category}</Badge>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                ) : (
+                  <div className="flex items-center gap-2 text-muted-foreground p-4">
+                    <AlertCircle className="h-4 w-4" />
+                    <span className="text-sm">No integrations detected</span>
+                  </div>
+                )}
               </ScrollArea>
+              <p className="text-xs text-muted-foreground">All detected integrations will be automatically imported with demo credentials</p>
             </div>
 
             <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setStep('url')} className="flex-1">
-                Back
-              </Button>
+              <Button variant="outline" onClick={() => setStep('url')} className="flex-1">Back</Button>
               <Button onClick={handleImport} className="flex-1">
                 Import App
-                {selectedIntegrations.length > 0 && (
-                  <Badge variant="secondary" className="ml-2">
-                    {selectedIntegrations.length}
-                  </Badge>
-                )}
+                <Badge variant="secondary" className="ml-2">{matchedIntegrations.length}</Badge>
               </Button>
             </div>
           </div>
@@ -285,16 +266,12 @@ export function ImportAppDialog({ open, onOpenChange }: ImportAppDialogProps) {
 
         {step === 'importing' && (
           <div className="py-8 flex flex-col items-center gap-4">
-            <div className="relative">
-              <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
-                <Loader2 className="h-8 w-8 text-primary animate-spin" />
-              </div>
+            <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+              <Loader2 className="h-8 w-8 text-primary animate-spin" />
             </div>
             <div className="text-center">
               <p className="font-medium">Importing {projectName}</p>
-              <p className="text-sm text-muted-foreground">
-                Creating site and generating demo credentials...
-              </p>
+              <p className="text-sm text-muted-foreground">Auto-importing {detectedIntegrations.length} integrations...</p>
             </div>
           </div>
         )}
