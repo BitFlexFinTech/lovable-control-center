@@ -14,7 +14,8 @@ import {
   KeyRound,
   Sparkles,
   CreditCard,
-  Search
+  Search,
+  MessageCircle
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { cn } from '@/lib/utils';
@@ -23,6 +24,7 @@ const mainNavItems = [
   { icon: LayoutDashboard, label: 'Overview', path: '/', tourId: 'nav-overview' },
   { icon: CreditCard, label: 'Billing', path: '/nexuspay', tourId: 'nav-billing' },
   { icon: Mail, label: 'Mail', path: '/mail', tourId: 'nav-mail' },
+  { icon: MessageCircle, label: 'WhatsApp', path: '/whatsapp', tourId: 'nav-whatsapp' },
   { icon: KeyRound, label: 'Password Manager', path: '/passwords', tourId: 'nav-passwords' },
   { icon: Building2, label: 'Tenants', path: '/tenants', tourId: 'nav-tenants' },
   { icon: Globe, label: 'Sites', path: '/sites', tourId: 'nav-sites' },
