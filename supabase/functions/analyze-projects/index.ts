@@ -117,10 +117,11 @@ serve(async (req) => {
       // ANALYZE EACH IMPORTED/CREATED SITE
       // ========================================
       for (const site of sites || []) {
-        const siteName = site.name || 'Unknown Site';
         const siteId = site.id;
+        const importedApp = importedApps?.find(app => app.site_id === siteId);
+        const siteName = importedApp?.project_name || site.name || 'Unknown Site';
         const siteColor = site.app_color || '#3b82f6';
-        const isImported = importedApps?.some(app => app.site_id === siteId);
+        const isImported = !!importedApp;
 
         // Get site's integrations and credentials
         const siteInts = siteIntegrations?.filter(si => si.site_id === siteId) || [];
