@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,12 +9,13 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Import, Loader2, Check, Github, FileJson, ChevronDown, Sparkles, AlertCircle } from 'lucide-react';
+import { Import, Loader2, Check, Github, FileJson, ChevronDown, Sparkles, AlertCircle, RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
 import { parsePackageJson, parseGitHubUrl } from '@/utils/dependencyParser';
+import { useDebounce } from '@/hooks/useDebounce';
 
 interface ImportAppDialogProps {
   open: boolean;
@@ -59,10 +60,14 @@ export function ImportAppDialog({ open, onOpenChange }: ImportAppDialogProps) {
   const [availableIntegrations, setAvailableIntegrations] = useState<Integration[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isDetecting, setIsDetecting] = useState(false);
+  const [isFetchingName, setIsFetchingName] = useState(false);
   const [autoDetected, setAutoDetected] = useState<string[]>([]);
   const [matchedPackages, setMatchedPackages] = useState<{ package: string; integration: string }[]>([]);
   const [detectionMethod, setDetectionMethod] = useState<'none' | 'github' | 'paste'>('none');
   const [showAdvanced, setShowAdvanced] = useState(false);
+  
+  // Debounce the lovable URL to avoid too many API calls
+  const debouncedLovableUrl = useDebounce(lovableUrl, 500);
 
   // Extract project name from URL
   const parseUrl = (url: string): string => {
@@ -99,6 +104,50 @@ export function ImportAppDialog({ open, onOpenChange }: ImportAppDialogProps) {
     setAvailableIntegrations(data || []);
     return data || [];
   };
+
+  // Auto-fetch project name from Lovable when URL changes
+  const fetchProjectNameFromLovable = useCallback(async (url: string) => {
+    if (!url || userEditedName) return;
+    
+    // Check if it's a valid Lovable URL
+    if (!url.includes('lovable.dev/projects/') && !url.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i)) {
+      return;
+    }
+
+    setIsFetchingName(true);
+    try {
+      console.log('Fetching project name from Lovable for:', url);
+      const { data, error } = await supabase.functions.invoke('fetch-lovable-project', {
+        body: { lovableUrl: url },
+      });
+
+      if (error) {
+        console.error('Error fetching from Lovable:', error);
+        return;
+      }
+
+      console.log('Lovable project fetch result:', data);
+
+      if (data?.projectName && !userEditedName) {
+        setProjectName(data.projectName);
+        toast({ 
+          title: 'Project name detected!', 
+          description: `Found: ${data.projectName}` 
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching project name:', error);
+    } finally {
+      setIsFetchingName(false);
+    }
+  }, [userEditedName]);
+
+  // Effect to auto-fetch when debounced URL changes
+  useEffect(() => {
+    if (debouncedLovableUrl && !userEditedName) {
+      fetchProjectNameFromLovable(debouncedLovableUrl);
+    }
+  }, [debouncedLovableUrl, fetchProjectNameFromLovable, userEditedName]);
 
   const handleDetectFromGitHub = async () => {
     if (!githubUrl.trim()) {
@@ -347,15 +396,41 @@ export function ImportAppDialog({ open, onOpenChange }: ImportAppDialogProps) {
             {/* Project Name */}
             <div className="space-y-2">
               <Label htmlFor="project-name">Project Name</Label>
-              <Input
-                id="project-name"
-                placeholder="My Awesome App"
-                value={projectName}
-                onChange={(e) => {
-                  setProjectName(e.target.value);
-                  setUserEditedName(true);
-                }}
-              />
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Input
+                    id="project-name"
+                    placeholder="My Awesome App"
+                    value={projectName}
+                    onChange={(e) => {
+                      setProjectName(e.target.value);
+                      setUserEditedName(true);
+                    }}
+                    className={isFetchingName ? 'pr-10' : ''}
+                  />
+                  {isFetchingName && (
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                    </div>
+                  )}
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => {
+                    setUserEditedName(false);
+                    fetchProjectNameFromLovable(lovableUrl);
+                  }}
+                  disabled={isFetchingName || !lovableUrl}
+                  title="Refresh name from Lovable"
+                >
+                  <RefreshCw className={`h-4 w-4 ${isFetchingName ? 'animate-spin' : ''}`} />
+                </Button>
+              </div>
+              {isFetchingName && (
+                <p className="text-xs text-muted-foreground">Fetching project name from Lovable...</p>
+              )}
             </div>
 
             {/* Auto-Detection Section */}

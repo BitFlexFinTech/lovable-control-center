@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MoreHorizontal, ExternalLink, Settings, RefreshCw, Search, Globe, Rocket, ArrowRight, CreditCard, BarChart3, Crown, User, Layers, Search as SearchIcon, ChevronDown, Import, Loader2, Eye, Link as LinkIcon, AlertCircle, GitBranch } from 'lucide-react';
+import { MoreHorizontal, ExternalLink, Settings, RefreshCw, Search, Globe, Rocket, ArrowRight, CreditCard, BarChart3, Crown, User, Layers, Search as SearchIcon, ChevronDown, Import, Loader2, Eye, Link as LinkIcon, AlertCircle, GitBranch, Pencil, RotateCw } from 'lucide-react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { StatusPill } from '@/components/dashboard/StatusPill';
@@ -27,10 +27,12 @@ import { ImportAppDialog } from '@/components/sites/ImportAppDialog';
 import { ResyncIntegrationsDialog } from '@/components/sites/ResyncIntegrationsDialog';
 import { EmbeddedSiteViewer } from '@/components/sites/EmbeddedSiteViewer';
 import { VerifyProjectsDialog } from '@/components/sites/VerifyProjectsDialog';
+import { RenameSiteDialog } from '@/components/sites/RenameSiteDialog';
 import { PermissionGate } from '@/components/permissions/PermissionGate';
 import { useToast } from '@/hooks/use-toast';
 import { SiteOwnerType, SubscriptionTier } from '@/types/billing';
 import { Skeleton } from '@/components/ui/skeleton';
+import { supabase } from '@/integrations/supabase/client';
 
 
 const Sites = () => {
@@ -49,7 +51,9 @@ const Sites = () => {
   const [isEmbeddedViewerOpen, setIsEmbeddedViewerOpen] = useState(false);
   const [isVerifyOpen, setIsVerifyOpen] = useState(false);
   const [isResyncOpen, setIsResyncOpen] = useState(false);
+  const [isRenameOpen, setIsRenameOpen] = useState(false);
   const [selectedSite, setSelectedSite] = useState<typeof sites[0] | null>(null);
+  const [isRefreshingMetadata, setIsRefreshingMetadata] = useState<string | null>(null);
   const [isControlCenterLive, setIsControlCenterLive] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [ownerFilter, setOwnerFilter] = useState<'all' | SiteOwnerType>('all');
@@ -82,6 +86,40 @@ const Sites = () => {
   const handleSEOManager = (site: typeof sites[0]) => { setSelectedSite(site); setIsSEOManagerOpen(true); };
   const handleOpenSite = (site: typeof sites[0]) => { setSelectedSite(site); setIsEmbeddedViewerOpen(true); };
   const handleResync = (site: typeof sites[0]) => { setSelectedSite(site); setIsResyncOpen(true); };
+  const handleRename = (site: typeof sites[0]) => { setSelectedSite(site); setIsRenameOpen(true); };
+
+  const handleRefreshMetadata = async (site: typeof sites[0]) => {
+    if (!site.lovable_url) {
+      toast({ title: 'No Lovable URL', description: 'This site has no linked Lovable project URL.', variant: 'destructive' });
+      return;
+    }
+
+    setIsRefreshingMetadata(site.id);
+    try {
+      const { data, error } = await supabase.functions.invoke('fetch-lovable-project', {
+        body: { lovableUrl: site.lovable_url },
+      });
+
+      if (error) throw error;
+
+      if (data?.projectName) {
+        // Update site name
+        await supabase.from('sites').update({ name: data.projectName }).eq('id', site.id);
+        // Also update imported_apps if exists
+        await supabase.from('imported_apps').update({ project_name: data.projectName }).eq('site_id', site.id);
+        
+        toast({ title: 'Metadata refreshed', description: `Site renamed to "${data.projectName}"` });
+        refetch();
+      } else {
+        toast({ title: 'Could not fetch name', description: 'The project name could not be extracted from Lovable.', variant: 'destructive' });
+      }
+    } catch (error) {
+      console.error('Error refreshing metadata:', error);
+      toast({ title: 'Refresh failed', description: 'Could not fetch project name from Lovable.', variant: 'destructive' });
+    } finally {
+      setIsRefreshingMetadata(null);
+    }
+  };
 
   const handleGoLiveComplete = async () => {
     if (!selectedSite) return;
@@ -134,6 +172,19 @@ const Sites = () => {
                 <Eye className="h-4 w-4" />Open Site
               </DropdownMenuItem>
               <DropdownMenuItem className="gap-2"><Settings className="h-4 w-4" />Settings</DropdownMenuItem>
+              <DropdownMenuItem className="gap-2" onClick={() => handleRename(site)}>
+                <Pencil className="h-4 w-4" />Rename
+              </DropdownMenuItem>
+              {site.lovable_url && (
+                <DropdownMenuItem 
+                  className="gap-2" 
+                  onClick={() => handleRefreshMetadata(site)}
+                  disabled={isRefreshingMetadata === site.id}
+                >
+                  <RotateCw className={`h-4 w-4 ${isRefreshingMetadata === site.id ? 'animate-spin' : ''}`} />
+                  {isRefreshingMetadata === site.id ? 'Refreshing...' : 'Refresh from Lovable'}
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem className="gap-2" onClick={() => handleSEOManager(site)}><SearchIcon className="h-4 w-4" />SEO Manager</DropdownMenuItem>
               <DropdownMenuItem className="gap-2" onClick={() => handleResync(site)}><GitBranch className="h-4 w-4" />Re-Sync Integrations</DropdownMenuItem>
               <DropdownMenuSeparator />
@@ -295,6 +346,11 @@ const Sites = () => {
         </>
       )}
       <VerifyProjectsDialog open={isVerifyOpen} onOpenChange={setIsVerifyOpen} />
+      <RenameSiteDialog 
+        open={isRenameOpen} 
+        onOpenChange={setIsRenameOpen} 
+        site={selectedSite ? { id: selectedSite.id, name: selectedSite.name, lovable_url: selectedSite.lovable_url } : null} 
+      />
     </DashboardLayout>
   );
 };

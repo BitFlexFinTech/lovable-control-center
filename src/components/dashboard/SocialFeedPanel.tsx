@@ -185,20 +185,30 @@ export function SocialFeedPanel({ className }: { className?: string }) {
 
   // Handle connect account
   const handleConnectAccount = async () => {
+    console.log('Attempting to connect account for platform:', activePlatform);
+    console.log('Platform config:', activePlatformConfig);
+    
     try {
-      await connectAccount.mutateAsync({
+      const result = await connectAccount.mutateAsync({
         platform: activePlatform,
         username: `demo_${activePlatform}_user`,
         displayName: `Demo ${activePlatformConfig.name} User`,
       });
+      
+      console.log('Connect account result:', result);
+      
       toast({
         title: `${activePlatformConfig.name} Connected`,
         description: `Your ${activePlatformConfig.name} account has been connected successfully.`,
       });
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Connection error details:', error);
+      console.error('Error message:', error?.message);
+      console.error('Error code:', error?.code);
+      
       toast({
         title: 'Connection Failed',
-        description: 'Failed to connect account. Please try again.',
+        description: error?.message || 'Failed to connect account. Please try again.',
         variant: 'destructive',
       });
     }
