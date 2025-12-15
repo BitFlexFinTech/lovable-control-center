@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MoreHorizontal, ExternalLink, Settings, RefreshCw, Search, Globe, Rocket, ArrowRight, CreditCard, BarChart3, Crown, User, Layers, Search as SearchIcon, ChevronDown, Import, Loader2, Eye, Link as LinkIcon, AlertCircle, GitBranch, Pencil, RotateCw } from 'lucide-react';
+import { MoreHorizontal, ExternalLink, Settings, RefreshCw, Search, Globe, Rocket, ArrowRight, CreditCard, BarChart3, Crown, User, Layers, Search as SearchIcon, ChevronDown, Import, Loader2, Eye, Link as LinkIcon, AlertCircle, GitBranch, Pencil, RotateCw, Trash2 } from 'lucide-react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { StatusPill } from '@/components/dashboard/StatusPill';
@@ -10,8 +10,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { useTenant } from '@/contexts/TenantContext';
-import { useSites } from '@/hooks/useSupabaseSites';
+import { useSites, useUpdateSite, useDeleteSite } from '@/hooks/useSupabaseSites';
 import { useSiteIntegrations } from '@/hooks/useSupabaseIntegrations';
 import { CreateSiteWithDomainDialog } from '@/components/mail/CreateSiteWithDomainDialog';
 import { GoLiveDialog } from '@/components/sites/GoLiveDialog';
@@ -29,6 +30,7 @@ import { EmbeddedSiteViewer } from '@/components/sites/EmbeddedSiteViewer';
 import { VerifyProjectsDialog } from '@/components/sites/VerifyProjectsDialog';
 import { RenameSiteDialog } from '@/components/sites/RenameSiteDialog';
 import { PermissionGate } from '@/components/permissions/PermissionGate';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { SiteOwnerType, SubscriptionTier } from '@/types/billing';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -58,6 +60,12 @@ const Sites = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [ownerFilter, setOwnerFilter] = useState<'all' | SiteOwnerType>('all');
   const [viewMode, setViewMode] = useState<'list' | 'comparison'>('list');
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [siteToDelete, setSiteToDelete] = useState<typeof sites[0] | null>(null);
+  const [togglingStatus, setTogglingStatus] = useState<string | null>(null);
+
+  const updateSite = useUpdateSite();
+  const deleteSite = useDeleteSite();
 
   // Fetch site integrations for resync dialog
   const { data: siteIntegrations = [] } = useSiteIntegrations(selectedSite?.id);
@@ -132,6 +140,42 @@ const Sites = () => {
     refetch();
   };
 
+  const handleDeleteSite = (site: typeof sites[0]) => {
+    setSiteToDelete(site);
+    setIsDeleteOpen(true);
+  };
+
+  const confirmDeleteSite = async () => {
+    if (!siteToDelete) return;
+    try {
+      // Delete from imported_apps first (cascade)
+      await supabase.from('imported_apps').delete().eq('site_id', siteToDelete.id);
+      // Delete from sites
+      await deleteSite.mutateAsync(siteToDelete.id);
+      toast({ title: 'Site deleted', description: `${siteToDelete.name} has been removed.` });
+      refetch();
+    } catch (error) {
+      toast({ title: 'Delete failed', variant: 'destructive' });
+    } finally {
+      setIsDeleteOpen(false);
+      setSiteToDelete(null);
+    }
+  };
+
+  const handleToggleDemoLive = async (site: typeof sites[0]) => {
+    const newStatus = site.status === 'live' ? 'demo' : 'live';
+    setTogglingStatus(site.id);
+    try {
+      await updateSite.mutateAsync({ id: site.id, status: newStatus });
+      toast({ title: `Site is now ${newStatus}`, description: `${site.name} status updated.` });
+      refetch();
+    } catch (error) {
+      toast({ title: 'Update failed', variant: 'destructive' });
+    } finally {
+      setTogglingStatus(null);
+    }
+  };
+
   const handleUpgradeComplete = (newTier: SubscriptionTier) => {
     toast({ title: 'Subscription upgraded', description: `Now on ${newTier} plan.` });
     refetch();
@@ -155,7 +199,15 @@ const Sites = () => {
         <TableCell><SiteOwnerBadge ownerType={(site.owner_type || 'admin') as SiteOwnerType} showTier /></TableCell>
         <TableCell><span className="text-sm">{getTenantName(site.tenant_id)}</span></TableCell>
         <TableCell>
-          {isDemo ? <Badge className="bg-status-warning/20 text-status-warning border-status-warning/30">Demo</Badge> : <Badge className="bg-status-active/20 text-status-active border-status-active/30">Live</Badge>}
+          <div className="flex items-center gap-2">
+            {isDemo ? <Badge className="bg-status-warning/20 text-status-warning border-status-warning/30">Demo</Badge> : <Badge className="bg-status-active/20 text-status-active border-status-active/30">Live</Badge>}
+            <Switch
+              checked={!isDemo}
+              onCheckedChange={() => handleToggleDemoLive(site)}
+              disabled={togglingStatus === site.id}
+              className="scale-75"
+            />
+          </div>
         </TableCell>
         <TableCell><StatusPill status={statusValue as 'active' | 'inactive'} /></TableCell>
         <TableCell><span className="text-sm text-muted-foreground">-</span></TableCell>
@@ -196,6 +248,10 @@ const Sites = () => {
                   <DropdownMenuItem className="gap-2 text-status-active" onClick={() => handleGoLive(site)}><Rocket className="h-4 w-4" />Go Live</DropdownMenuItem>
                 )}
               </PermissionGate>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="gap-2 text-destructive" onClick={() => handleDeleteSite(site)}>
+                <Trash2 className="h-4 w-4" />Delete Site
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </TableCell>
@@ -350,6 +406,15 @@ const Sites = () => {
         open={isRenameOpen} 
         onOpenChange={setIsRenameOpen} 
         site={selectedSite ? { id: selectedSite.id, name: selectedSite.name, lovable_url: selectedSite.lovable_url } : null} 
+      />
+      <ConfirmDialog
+        open={isDeleteOpen}
+        onOpenChange={setIsDeleteOpen}
+        title="Delete Site"
+        description={`Are you sure you want to delete "${siteToDelete?.name}"? This action cannot be undone and will remove all associated data.`}
+        confirmText="Delete"
+        variant="destructive"
+        onConfirm={confirmDeleteSite}
       />
     </DashboardLayout>
   );
