@@ -35,7 +35,7 @@ import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import NexusPay from "./pages/NexusPay";
 import Analyze from "./pages/Analyze";
-import WhatsApp from "./pages/WhatsApp";
+import WhatsApp from "@/pages/WhatsApp";
 
 const queryClient = new QueryClient({
   defaultOptions: {
