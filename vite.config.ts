@@ -13,6 +13,12 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      // Force all React imports to use the same version (fixes react-twitter-embed conflict)
+      "react": path.resolve(__dirname, "./node_modules/react"),
+      "react-dom": path.resolve(__dirname, "./node_modules/react-dom"),
     },
+  },
+  optimizeDeps: {
+    include: ['react', 'react-dom'],
   },
 }));
