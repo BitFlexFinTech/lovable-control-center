@@ -36,6 +36,7 @@ import NotFound from "./pages/NotFound";
 import NexusPay from "./pages/NexusPay";
 import Analyze from "./pages/Analyze";
 import WhatsApp from "@/pages/WhatsApp";
+import { AIChatPanel } from "@/components/ai/AIChatPanel";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -146,6 +147,7 @@ const App = () => (
                                 } />
                                 <Route path="*" element={<NotFound />} />
                               </Routes>
+                              <AIChatPanel />
                             </KeyboardShortcutsProvider>
                           </BrowserRouter>
                           </TourProvider>

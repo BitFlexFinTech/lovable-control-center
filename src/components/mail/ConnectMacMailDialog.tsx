@@ -96,6 +96,31 @@ export function ConnectMacMailDialog({ isOpen, onClose }: ConnectMacMailDialogPr
         
         {step === 'select' && (
           <div className="space-y-4 py-4">
+            {/* One-click Mac Mail connect for macOS */}
+            <Button
+              onClick={() => {
+                window.open('x-apple.systempreferences:com.apple.preference.internet-accounts', '_blank');
+                toast({
+                  title: 'Mac Mail Preferences Opened',
+                  description: 'Add your account in Mail preferences, then return here to sync.',
+                });
+              }}
+              variant="outline"
+              className="w-full gap-2 h-12 border-primary/30 hover:bg-primary/10"
+            >
+              <Apple className="h-5 w-5" />
+              One-Click Mac Mail Setup
+            </Button>
+            
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">Or connect manually</span>
+              </div>
+            </div>
+            
             <p className="text-sm text-muted-foreground">Select your email provider:</p>
             
             <div className="grid grid-cols-2 gap-3">

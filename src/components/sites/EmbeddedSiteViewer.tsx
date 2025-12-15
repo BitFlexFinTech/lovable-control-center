@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, ExternalLink, RefreshCw, ArrowLeft, ArrowRight, Home, Maximize2, Minimize2 } from 'lucide-react';
+import { X, ExternalLink, RefreshCw, ArrowLeft, ArrowRight, Home, Maximize2, Minimize2, AlertCircle } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -19,6 +19,7 @@ export function EmbeddedSiteViewer({ isOpen, onClose, siteUrl, siteName }: Embed
   const [currentUrl, setCurrentUrl] = useState(siteUrl);
   const [isLoading, setIsLoading] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [iframeError, setIframeError] = useState(false);
   const [history, setHistory] = useState<string[]>([siteUrl]);
   const [historyIndex, setHistoryIndex] = useState(0);
 
@@ -26,8 +27,14 @@ export function EmbeddedSiteViewer({ isOpen, onClose, siteUrl, siteName }: Embed
     setIsLoading(false);
   };
 
+  const handleIframeError = () => {
+    setIsLoading(false);
+    setIframeError(true);
+  };
+
   const handleRefresh = () => {
     setIsLoading(true);
+    setIframeError(false);
     const iframe = document.getElementById('embedded-site-iframe') as HTMLIFrameElement;
     if (iframe) {
       iframe.src = currentUrl;
@@ -39,6 +46,7 @@ export function EmbeddedSiteViewer({ isOpen, onClose, siteUrl, siteName }: Embed
       const newIndex = historyIndex - 1;
       setHistoryIndex(newIndex);
       setCurrentUrl(history[newIndex]);
+      setIframeError(false);
     }
   };
 
@@ -47,6 +55,7 @@ export function EmbeddedSiteViewer({ isOpen, onClose, siteUrl, siteName }: Embed
       const newIndex = historyIndex + 1;
       setHistoryIndex(newIndex);
       setCurrentUrl(history[newIndex]);
+      setIframeError(false);
     }
   };
 
@@ -56,6 +65,7 @@ export function EmbeddedSiteViewer({ isOpen, onClose, siteUrl, siteName }: Embed
       setHistory(newHistory);
       setHistoryIndex(newHistory.length - 1);
       setCurrentUrl(siteUrl);
+      setIframeError(false);
     }
   };
 
@@ -166,7 +176,7 @@ export function EmbeddedSiteViewer({ isOpen, onClose, siteUrl, siteName }: Embed
         </div>
 
         {/* Loading indicator */}
-        {isLoading && (
+        {isLoading && !iframeError && (
           <div className="absolute inset-0 top-14 bg-background/80 flex items-center justify-center z-10">
             <div className="flex flex-col items-center gap-3">
               <RefreshCw className="h-8 w-8 text-primary animate-spin" />
@@ -175,17 +185,38 @@ export function EmbeddedSiteViewer({ isOpen, onClose, siteUrl, siteName }: Embed
           </div>
         )}
 
+        {/* Iframe error fallback */}
+        {iframeError && (
+          <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8 bg-background">
+            <AlertCircle className="h-12 w-12 text-muted-foreground" />
+            <div className="text-center space-y-2">
+              <h3 className="font-semibold text-lg">Cannot embed this site</h3>
+              <p className="text-sm text-muted-foreground max-w-md">
+                This site blocks iframe embedding for security reasons (X-Frame-Options). 
+                You can still open it in a new tab.
+              </p>
+            </div>
+            <Button onClick={handleOpenExternal} className="gap-2">
+              <ExternalLink className="h-4 w-4" />
+              Open in New Tab
+            </Button>
+          </div>
+        )}
+
         {/* Iframe container */}
-        <div className="flex-1 relative">
-          <iframe
-            id="embedded-site-iframe"
-            src={formattedUrl}
-            className="w-full h-full border-0"
-            onLoad={handleLoad}
-            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
-            title={`Embedded view of ${siteName}`}
-          />
-        </div>
+        {!iframeError && (
+          <div className="flex-1 relative">
+            <iframe
+              id="embedded-site-iframe"
+              src={formattedUrl}
+              className="w-full h-full border-0"
+              onLoad={handleLoad}
+              onError={handleIframeError}
+              sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
+              title={`Embedded view of ${siteName}`}
+            />
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );

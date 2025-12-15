@@ -1,80 +1,69 @@
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { WhatsAppConnectPanel } from '@/components/whatsapp/WhatsAppConnectPanel';
-import { WhatsAppChatsPanel } from '@/components/whatsapp/WhatsAppChatsPanel';
-import { WhatsAppStatusBar } from '@/components/whatsapp/WhatsAppStatusBar';
-import { WhatsAppSettingsDialog } from '@/components/whatsapp/WhatsAppSettingsDialog';
-import { useWhatsAppSession } from '@/hooks/useWhatsAppSession';
-import { Skeleton } from '@/components/ui/skeleton';
-
-export type WhatsAppConnectionStatus = 'disconnected' | 'connecting' | 'qr-pending' | 'connected' | 'reconnecting';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { ExternalLink, MessageSquare, Smartphone, QrCode, CheckCircle2 } from 'lucide-react';
 
 export default function WhatsApp() {
-  const {
-    session,
-    qrCode,
-    qrExpiry,
-    isLoading,
-    error,
-    requestQRCode,
-    confirmScan,
-    disconnect,
-    refreshQR,
-    isConnected,
-    status,
-  } = useWhatsAppSession();
-
-  if (isLoading) {
-    return (
-      <DashboardLayout>
-        <div className="h-[calc(100vh-4rem)] flex flex-col overflow-hidden">
-          <div className="h-10 border-b border-border">
-            <Skeleton className="h-full w-full" />
-          </div>
-          <div className="flex-1 flex items-center justify-center">
-            <Skeleton className="h-96 w-96 rounded-lg" />
-          </div>
-        </div>
-      </DashboardLayout>
+  const handleOpenWhatsApp = () => {
+    window.open(
+      'https://web.whatsapp.com/',
+      'WhatsApp',
+      'width=1200,height=800,menubar=no,toolbar=no,location=no,status=no'
     );
-  }
+  };
 
   return (
     <DashboardLayout>
-      <div className="h-[calc(100vh-4rem)] flex flex-col overflow-hidden">
-        {/* Status Bar */}
-        <div className="flex items-center justify-between">
-          <WhatsAppStatusBar 
-            status={status as WhatsAppConnectionStatus}
-            phoneNumber={session?.phoneNumber || null}
-            onDisconnect={disconnect}
-          />
-          <div className="px-4">
-            <WhatsAppSettingsDialog
-              isConnected={isConnected}
-              phoneNumber={session?.phoneNumber || null}
-              lastConnectedAt={session?.lastConnectedAt || null}
-              onDisconnect={disconnect}
-            />
-          </div>
-        </div>
+      <div className="h-[calc(100vh-4rem)] flex flex-col items-center justify-center p-6">
+        <Card className="max-w-md w-full text-center">
+          <CardHeader className="pb-4">
+            <div className="mx-auto w-20 h-20 rounded-full bg-green-500/10 flex items-center justify-center mb-4">
+              <MessageSquare className="h-10 w-10 text-green-500" />
+            </div>
+            <CardTitle className="text-2xl">WhatsApp Web</CardTitle>
+            <CardDescription>
+              Open WhatsApp Web in a new window to manage your messages
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-3 text-left">
+              <div className="flex items-start gap-3">
+                <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-xs font-medium">1</div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium">Open WhatsApp on your phone</p>
+                  <p className="text-xs text-muted-foreground">Go to Settings → Linked Devices</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-xs font-medium">2</div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium">Tap "Link a Device"</p>
+                  <p className="text-xs text-muted-foreground">Point your phone at the QR code</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-xs font-medium">3</div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium">Start messaging</p>
+                  <p className="text-xs text-muted-foreground">Your chats will sync automatically</p>
+                </div>
+              </div>
+            </div>
 
-        {/* Main Content */}
-        <div className="flex-1 overflow-hidden">
-          {isConnected && session?.id ? (
-            <WhatsAppChatsPanel sessionId={session.id} />
-          ) : (
-            <WhatsAppConnectPanel 
-              status={status as WhatsAppConnectionStatus}
-              qrCode={qrCode}
-              qrExpiry={qrExpiry}
-              error={error}
-              onConnect={requestQRCode}
-              onConfirmScan={confirmScan}
-              onCancel={() => disconnect()}
-              onRefreshQR={refreshQR}
-            />
-          )}
-        </div>
+            <Button 
+              size="lg" 
+              onClick={handleOpenWhatsApp} 
+              className="w-full gap-2 bg-green-500 hover:bg-green-600 text-white"
+            >
+              <ExternalLink className="h-5 w-5" />
+              Open WhatsApp Web
+            </Button>
+
+            <p className="text-xs text-muted-foreground">
+              WhatsApp Web will open in a new popup window
+            </p>
+          </CardContent>
+        </Card>
       </div>
     </DashboardLayout>
   );
