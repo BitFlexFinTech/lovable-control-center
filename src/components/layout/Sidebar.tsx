@@ -3,12 +3,11 @@ import {
   Building2, 
   Globe, 
   Users, 
-  Shield, 
+  Shield as ShieldIcon, 
   Plug, 
   ScrollText,
   Settings,
   HelpCircle,
-  Zap,
   Mail,
   Share2,
   KeyRound,
@@ -19,6 +18,7 @@ import {
   Youtube,
   Bot
 } from 'lucide-react';
+import { ZACCLogo } from '@/components/layout/ZACCLogo';
 import { NavLink } from '@/components/NavLink';
 import { cn } from '@/lib/utils';
 
@@ -37,7 +37,7 @@ const mainNavItems = [
 
 const configNavItems = [
   { icon: Search, label: 'Analyze', path: '/analyze', tourId: 'nav-analyze' },
-  { icon: Shield, label: 'Roles', path: '/roles', tourId: 'nav-roles' },
+  { icon: ShieldIcon, label: 'Roles', path: '/roles', tourId: 'nav-roles' },
   { icon: Plug, label: 'Integrations', path: '/integrations', tourId: 'nav-integrations' },
   { icon: Share2, label: 'Social Prefill', path: '/social-prefill', tourId: 'nav-social-prefill' },
   { icon: ScrollText, label: 'Audit Logs', path: '/audit-logs', tourId: 'nav-audit-logs' },
@@ -63,11 +63,8 @@ export function Sidebar() {
   return (
     <aside className="fixed left-0 top-0 h-screen w-60 bg-sidebar border-r border-sidebar-border flex flex-col z-50">
       {/* Logo */}
-      <div className="h-16 flex items-center gap-2 px-5 border-b border-sidebar-border" data-tour="sidebar-logo">
-        <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
-          <Zap className="h-4 w-4 text-primary-foreground" />
-        </div>
-        <span className="font-semibold text-lg tracking-tight">Control Center</span>
+      <div className="h-16 flex items-center px-5 border-b border-sidebar-border" data-tour="sidebar-logo">
+        <ZACCLogo size="md" />
       </div>
 
       {/* Navigation */}
