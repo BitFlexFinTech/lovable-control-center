@@ -2,7 +2,7 @@ import { Wifi, WifiOff, Loader2, QrCode, RefreshCw, Phone, LogOut } from 'lucide
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import type { WhatsAppConnectionStatus } from '@/pages/WhatsApp';
+import type { WhatsAppConnectionStatus } from '@/types/whatsapp';
 
 interface WhatsAppStatusBarProps {
   status: WhatsAppConnectionStatus;
