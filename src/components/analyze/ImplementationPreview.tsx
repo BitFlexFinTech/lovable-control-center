@@ -13,14 +13,15 @@ import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Checkbox } from '@/components/ui/checkbox';
 import { 
   Zap, CheckCircle2, Loader2, AlertTriangle, 
-  Wrench, Eye, XCircle, ChevronDown, ChevronRight, Building2
+  Wrench, Eye, XCircle, ChevronDown, ChevronRight, Building2,
+  Github, ExternalLink
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import type { AnalysisFinding } from '@/pages/Analyze';
-import { cn } from '@/lib/utils';
 
 interface ImplementationPreviewProps {
   open: boolean;
@@ -29,14 +30,24 @@ interface ImplementationPreviewProps {
   onComplete: () => void;
 }
 
-type ImplementationState = 'preview' | 'running' | 'complete';
+type ImplementationState = 'preview' | 'running' | 'pushing' | 'complete';
 type SiteStatus = 'pending' | 'running' | 'complete' | 'error';
+type GitHubPushStatus = 'pending' | 'pushing' | 'pushed' | 'error' | 'skipped';
 
 interface ImplementationResult {
   findingId: string;
   siteId: string;
   siteName: string;
   status: 'success' | 'failed' | 'skipped';
+  message?: string;
+}
+
+interface GitHubPushResult {
+  siteId: string;
+  siteName: string;
+  status: 'success' | 'failed' | 'skipped';
+  commitSha?: string;
+  commitUrl?: string;
   message?: string;
 }
 
@@ -49,6 +60,10 @@ interface SiteProgress {
   totalFindings: number;
   completedFindings: number;
   results: ImplementationResult[];
+  githubPushStatus: GitHubPushStatus;
+  commitSha?: string;
+  commitUrl?: string;
+  githubMessage?: string;
 }
 
 export function ImplementationPreview({ 
@@ -62,6 +77,7 @@ export function ImplementationPreview({
   const [currentAction, setCurrentAction] = useState<string>('');
   const [siteProgress, setSiteProgress] = useState<Record<string, SiteProgress>>({});
   const [expandedSites, setExpandedSites] = useState<Record<string, boolean>>({});
+  const [pushToGitHub, setPushToGitHub] = useState(true);
   const { toast } = useToast();
 
   // Group findings by site
@@ -100,7 +116,8 @@ export function ImplementationPreview({
         progress: 0,
         totalFindings: data.findings.length,
         completedFindings: 0,
-        results: []
+        results: [],
+        githubPushStatus: pushToGitHub && siteId !== 'control-center' ? 'pending' : 'skipped',
       };
       initialExpanded[siteId] = true;
     });
@@ -108,9 +125,12 @@ export function ImplementationPreview({
     setExpandedSites(initialExpanded);
 
     try {
+      // Use implement-and-push if pushing to GitHub, otherwise just implement
+      const action = pushToGitHub ? 'implement-and-push' : 'implement';
+      
       const { data, error } = await supabase.functions.invoke('analyze-projects', {
         body: { 
-          action: 'implement',
+          action,
           findings: findings.map(f => ({ 
             id: f.id, 
             site_id: f.site_id,
@@ -142,7 +162,7 @@ export function ImplementationPreview({
           const finding = siteData.findings[i];
           setCurrentAction(finding.title);
           
-          await new Promise(resolve => setTimeout(resolve, 600));
+          await new Promise(resolve => setTimeout(resolve, 400));
           
           const result: ImplementationResult = {
             findingId: finding.id,
@@ -165,17 +185,52 @@ export function ImplementationPreview({
           }));
         }
 
-        // Mark site as complete
+        // Mark site fixes as complete
         setSiteProgress(prev => ({
           ...prev,
           [siteId]: { ...prev[siteId], status: 'complete', progress: 100 }
         }));
       }
 
+      // If pushing to GitHub, update GitHub status from response
+      if (pushToGitHub && data?.gitHubResults) {
+        setState('pushing');
+        setCurrentAction('Pushing changes to GitHub...');
+
+        for (const ghResult of data.gitHubResults as GitHubPushResult[]) {
+          setSiteProgress(prev => ({
+            ...prev,
+            [ghResult.siteId]: {
+              ...prev[ghResult.siteId],
+              githubPushStatus: 'pushing'
+            }
+          }));
+
+          await new Promise(resolve => setTimeout(resolve, 500));
+
+          setSiteProgress(prev => ({
+            ...prev,
+            [ghResult.siteId]: {
+              ...prev[ghResult.siteId],
+              githubPushStatus: ghResult.status === 'success' ? 'pushed' : 
+                               ghResult.status === 'failed' ? 'error' : 'skipped',
+              commitSha: ghResult.commitSha,
+              commitUrl: ghResult.commitUrl,
+              githubMessage: ghResult.message
+            }
+          }));
+        }
+      }
+
       setState('complete');
+
+      const pushSuccessCount = (data?.gitHubResults as GitHubPushResult[] | undefined)?.filter(r => r.status === 'success').length || 0;
+      
       toast({
         title: "Implementation Complete",
-        description: `Applied fixes across ${siteCount} sites. ${autoFixCount} auto-fixes, ${manualCount + reviewCount} require manual action.`
+        description: pushToGitHub 
+          ? `Applied ${autoFixCount} fixes. Pushed to ${pushSuccessCount} GitHub repo(s).`
+          : `Applied fixes across ${siteCount} sites.`
       });
     } catch (error) {
       console.error('Implementation error:', error);
@@ -217,20 +272,22 @@ export function ImplementationPreview({
             <Zap className="h-5 w-5 text-primary" />
             {state === 'preview' && 'Implementation Preview'}
             {state === 'running' && 'Implementing Changes...'}
+            {state === 'pushing' && 'Pushing to GitHub...'}
             {state === 'complete' && 'Implementation Complete'}
           </DialogTitle>
           <DialogDescription>
             {state === 'preview' && `Review ${findings.length} actions across ${siteCount} sites`}
             {state === 'running' && currentAction}
+            {state === 'pushing' && 'Committing changes to repositories...'}
             {state === 'complete' && `All actions processed across ${siteCount} sites`}
           </DialogDescription>
         </DialogHeader>
 
-        {state === 'running' && (
+        {(state === 'running' || state === 'pushing') && (
           <div className="py-4 space-y-4">
             <div className="space-y-1">
               <div className="flex justify-between text-sm">
-                <span>Overall Progress</span>
+                <span>{state === 'pushing' ? 'Pushing to GitHub' : 'Overall Progress'}</span>
                 <span>{Math.round(overallProgress)}%</span>
               </div>
               <Progress value={overallProgress} className="h-2" />
@@ -241,7 +298,7 @@ export function ImplementationPreview({
         {state === 'preview' && (
           <>
             {/* Summary */}
-            <div className="flex gap-3 py-2">
+            <div className="flex flex-wrap gap-3 py-2">
               <Badge variant="outline" className="gap-1">
                 {siteCount} Site{siteCount !== 1 ? 's' : ''}
               </Badge>
@@ -257,9 +314,33 @@ export function ImplementationPreview({
                 <Eye className="h-3 w-3" />
                 {reviewCount} Review
               </Badge>
+              {siteCount > 0 && Object.keys(findingsBySite).some(id => id !== 'control-center') && (
+                <Badge variant="outline" className="gap-1 bg-muted">
+                  <Github className="h-3 w-3" />
+                  GitHub Push
+                </Badge>
+              )}
             </div>
 
             <Separator />
+
+            {/* Push to GitHub Option */}
+            {Object.keys(findingsBySite).some(id => id !== 'control-center') && (
+              <div className="flex items-center space-x-2 py-2 px-3 bg-muted/30 rounded-lg">
+                <Checkbox
+                  id="push-to-github"
+                  checked={pushToGitHub}
+                  onCheckedChange={(checked) => setPushToGitHub(checked === true)}
+                />
+                <label
+                  htmlFor="push-to-github"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-2"
+                >
+                  <Github className="h-4 w-4" />
+                  Push changes to GitHub repositories
+                </label>
+              </div>
+            )}
 
             {/* Sites List */}
             <ScrollArea className="h-[350px] pr-4">
@@ -312,14 +393,12 @@ export function ImplementationPreview({
           </>
         )}
 
-        {(state === 'running' || state === 'complete') && (
+        {(state === 'running' || state === 'pushing' || state === 'complete') && (
           <ScrollArea className="h-[400px] pr-4">
             <div className="space-y-3">
               {Object.entries(siteProgress).map(([siteId, sp]) => {
                 const isExpanded = expandedSites[siteId] ?? true;
                 const isControlCenter = siteId === 'control-center';
-                const successCount = sp.results.filter(r => r.status === 'success').length;
-                const failedCount = sp.results.filter(r => r.status === 'failed').length;
 
                 return (
                   <Collapsible 
@@ -407,6 +486,53 @@ export function ImplementationPreview({
                               Waiting to process...
                             </p>
                           )}
+                          
+                          {/* GitHub Push Status */}
+                          {sp.githubPushStatus !== 'skipped' && !isControlCenter && (
+                            <div className="border-t mt-2 pt-2">
+                              <div className="flex items-center gap-2 p-2 rounded text-sm">
+                                <Github className="h-3.5 w-3.5 shrink-0" />
+                                <span className="flex-1">GitHub Push</span>
+                                {sp.githubPushStatus === 'pending' && (
+                                  <Badge variant="outline" className="text-xs">Pending</Badge>
+                                )}
+                                {sp.githubPushStatus === 'pushing' && (
+                                  <Badge variant="outline" className="gap-1 text-xs bg-blue-500/10 text-blue-600 border-blue-500/30">
+                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                    Pushing
+                                  </Badge>
+                                )}
+                                {sp.githubPushStatus === 'pushed' && (
+                                  <div className="flex items-center gap-2">
+                                    <Badge variant="outline" className="gap-1 text-xs bg-green-500/10 text-green-600 border-green-500/30">
+                                      <CheckCircle2 className="h-3 w-3" />
+                                      Pushed
+                                    </Badge>
+                                    {sp.commitUrl && (
+                                      <a 
+                                        href={sp.commitUrl} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="text-xs text-primary hover:underline flex items-center gap-1"
+                                      >
+                                        {sp.commitSha?.slice(0, 7)}
+                                        <ExternalLink className="h-3 w-3" />
+                                      </a>
+                                    )}
+                                  </div>
+                                )}
+                                {sp.githubPushStatus === 'error' && (
+                                  <Badge variant="destructive" className="gap-1 text-xs">
+                                    <XCircle className="h-3 w-3" />
+                                    Failed
+                                  </Badge>
+                                )}
+                              </div>
+                              {sp.githubMessage && sp.githubPushStatus !== 'pushed' && (
+                                <p className="text-xs text-muted-foreground px-2 pb-1">{sp.githubMessage}</p>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </CollapsibleContent>
                     </div>
@@ -430,10 +556,10 @@ export function ImplementationPreview({
             </>
           )}
           
-          {state === 'running' && (
+          {(state === 'running' || state === 'pushing') && (
             <Button disabled>
               <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              Implementing...
+              {state === 'pushing' ? 'Pushing to GitHub...' : 'Implementing...'}
             </Button>
           )}
           

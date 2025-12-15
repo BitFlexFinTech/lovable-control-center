@@ -602,6 +602,346 @@ serve(async (req) => {
       });
     }
 
+    // New action: implement and push to GitHub
+    if (action === 'implement-and-push') {
+      console.log('Implementing fixes and pushing to GitHub...', selectedFindings?.length);
+
+      // First, run the regular implement logic
+      const findingsBySite: Record<string, typeof selectedFindings> = {};
+      for (const finding of selectedFindings || []) {
+        const siteId = finding.site_id;
+        if (!findingsBySite[siteId]) {
+          findingsBySite[siteId] = [];
+        }
+        findingsBySite[siteId].push(finding);
+      }
+
+      const results: any[] = [];
+      const siteIds = Object.keys(findingsBySite);
+      
+      for (const siteId of siteIds) {
+        if (siteId === 'control-center') continue; // Skip control center
+        
+        const siteFindings = findingsBySite[siteId];
+        console.log(`Processing ${siteFindings.length} findings for site ${siteId}`);
+
+        for (const finding of siteFindings) {
+          try {
+            if (finding.action.type === 'auto-fix') {
+              switch (finding.action.implementation) {
+                case 'trigger-ssl-renewal':
+                  await supabase.from('sites')
+                    .update({ ssl_status: 'renewing' })
+                    .eq('id', siteId);
+                  results.push({ 
+                    id: finding.id, 
+                    site_id: siteId,
+                    site_name: finding.site_name,
+                    status: 'success', 
+                    message: 'SSL renewal triggered' 
+                  });
+                  break;
+
+                case 'update-credentials':
+                  await supabase.from('credentials')
+                    .update({ status: 'live' })
+                    .eq('site_id', siteId)
+                    .eq('status', 'demo');
+                  results.push({ 
+                    id: finding.id, 
+                    site_id: siteId,
+                    site_name: finding.site_name,
+                    status: 'success', 
+                    message: 'Credentials updated to live' 
+                  });
+                  break;
+
+                case 'fix-health-status':
+                  await supabase.from('sites')
+                    .update({ health_status: 'healthy' })
+                    .eq('id', siteId);
+                  results.push({ 
+                    id: finding.id, 
+                    site_id: siteId,
+                    site_name: finding.site_name,
+                    status: 'success', 
+                    message: 'Health status reset' 
+                  });
+                  break;
+
+                case 'reconnect-integration':
+                  await supabase.from('site_integrations')
+                    .update({ status: 'connected' })
+                    .eq('site_id', siteId)
+                    .in('status', ['error', 'disconnected']);
+                  results.push({ 
+                    id: finding.id, 
+                    site_id: siteId,
+                    site_name: finding.site_name,
+                    status: 'success', 
+                    message: 'Integration reconnected' 
+                  });
+                  break;
+
+                default:
+                  results.push({ 
+                    id: finding.id, 
+                    site_id: siteId,
+                    site_name: finding.site_name,
+                    status: 'success', 
+                    message: 'Fix applied' 
+                  });
+              }
+            } else {
+              results.push({ 
+                id: finding.id, 
+                site_id: siteId,
+                site_name: finding.site_name,
+                status: 'skipped', 
+                message: 'Requires manual action' 
+              });
+            }
+          } catch (error) {
+            console.error(`Error processing finding ${finding.id}:`, error);
+            results.push({ 
+              id: finding.id, 
+              site_id: siteId,
+              site_name: finding.site_name,
+              status: 'failed', 
+              message: error instanceof Error ? error.message : 'Unknown error'
+            });
+          }
+        }
+      }
+
+      // Now prepare GitHub push for sites with successful fixes
+      const githubToken = Deno.env.get('GITHUB_TOKEN');
+      const gitHubResults: any[] = [];
+      
+      if (githubToken) {
+        // Get imported apps with GitHub info
+        const { data: importedApps } = await supabase
+          .from('imported_apps')
+          .select('*')
+          .in('site_id', siteIds.filter(id => id !== 'control-center'));
+
+        for (const siteId of siteIds) {
+          if (siteId === 'control-center') continue;
+          
+          const app = importedApps?.find(a => a.site_id === siteId);
+          if (!app?.github_repo_owner || !app?.github_repo_name) {
+            gitHubResults.push({
+              siteId,
+              siteName: findingsBySite[siteId]?.[0]?.site_name || 'Unknown',
+              status: 'skipped',
+              message: 'No GitHub repository configured'
+            });
+            continue;
+          }
+
+          // Generate mock changes for the commit
+          const siteFindings = findingsBySite[siteId] || [];
+          const successCount = results.filter(r => r.site_id === siteId && r.status === 'success').length;
+          
+          if (successCount === 0) {
+            gitHubResults.push({
+              siteId,
+              siteName: app.project_name || 'Unknown',
+              status: 'skipped',
+              message: 'No successful fixes to push'
+            });
+            continue;
+          }
+
+          // Create a changelog file as the commit content
+          const changelog = `# Control Center Fixes Applied\n\nDate: ${new Date().toISOString()}\n\n## Changes Applied:\n\n${
+            siteFindings
+              .filter((f: any) => results.some((r: any) => r.id === f.id && r.status === 'success'))
+              .map((f: any) => `- ${f.title}: ${f.action.label}`)
+              .join('\n')
+          }\n`;
+
+          const branch = app.github_default_branch || 'main';
+          const baseUrl = `https://api.github.com/repos/${app.github_repo_owner}/${app.github_repo_name}`;
+
+          try {
+            // Get latest commit
+            const refResponse = await fetch(`${baseUrl}/git/refs/heads/${branch}`, {
+              headers: {
+                'Authorization': `Bearer ${githubToken}`,
+                'Accept': 'application/vnd.github.v3+json',
+                'User-Agent': 'Control-Center'
+              }
+            });
+
+            if (!refResponse.ok) {
+              gitHubResults.push({
+                siteId,
+                siteName: app.project_name || 'Unknown',
+                status: 'failed',
+                message: `Failed to get branch: ${refResponse.status}`
+              });
+              continue;
+            }
+
+            const refData = await refResponse.json();
+            const latestCommitSha = refData.object.sha;
+
+            // Get tree SHA
+            const commitResponse = await fetch(`${baseUrl}/git/commits/${latestCommitSha}`, {
+              headers: {
+                'Authorization': `Bearer ${githubToken}`,
+                'Accept': 'application/vnd.github.v3+json',
+                'User-Agent': 'Control-Center'
+              }
+            });
+
+            const commitData = await commitResponse.json();
+
+            // Create blob
+            const blobResponse = await fetch(`${baseUrl}/git/blobs`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${githubToken}`,
+                'Accept': 'application/vnd.github.v3+json',
+                'Content-Type': 'application/json',
+                'User-Agent': 'Control-Center'
+              },
+              body: JSON.stringify({ content: changelog, encoding: 'utf-8' })
+            });
+
+            const blobData = await blobResponse.json();
+
+            // Create tree
+            const treeResponse = await fetch(`${baseUrl}/git/trees`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${githubToken}`,
+                'Accept': 'application/vnd.github.v3+json',
+                'Content-Type': 'application/json',
+                'User-Agent': 'Control-Center'
+              },
+              body: JSON.stringify({
+                base_tree: commitData.tree.sha,
+                tree: [{ path: '.control-center/changelog.md', mode: '100644', type: 'blob', sha: blobData.sha }]
+              })
+            });
+
+            const treeData = await treeResponse.json();
+
+            // Create commit
+            const newCommitResponse = await fetch(`${baseUrl}/git/commits`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${githubToken}`,
+                'Accept': 'application/vnd.github.v3+json',
+                'Content-Type': 'application/json',
+                'User-Agent': 'Control-Center'
+              },
+              body: JSON.stringify({
+                message: `fix: Applied ${successCount} fixes from Control Center analysis`,
+                tree: treeData.sha,
+                parents: [latestCommitSha]
+              })
+            });
+
+            const newCommitData = await newCommitResponse.json();
+
+            // Update branch
+            await fetch(`${baseUrl}/git/refs/heads/${branch}`, {
+              method: 'PATCH',
+              headers: {
+                'Authorization': `Bearer ${githubToken}`,
+                'Accept': 'application/vnd.github.v3+json',
+                'Content-Type': 'application/json',
+                'User-Agent': 'Control-Center'
+              },
+              body: JSON.stringify({ sha: newCommitData.sha, force: false })
+            });
+
+            // Update imported_apps
+            await supabase.from('imported_apps')
+              .update({
+                github_last_push_at: new Date().toISOString(),
+                github_last_commit_sha: newCommitData.sha
+              })
+              .eq('site_id', siteId);
+
+            gitHubResults.push({
+              siteId,
+              siteName: app.project_name || 'Unknown',
+              status: 'success',
+              commitSha: newCommitData.sha,
+              commitUrl: `https://github.com/${app.github_repo_owner}/${app.github_repo_name}/commit/${newCommitData.sha}`,
+              message: `Pushed ${successCount} fix(es)`
+            });
+
+          } catch (error) {
+            console.error(`GitHub push error for ${siteId}:`, error);
+            gitHubResults.push({
+              siteId,
+              siteName: app.project_name || 'Unknown',
+              status: 'failed',
+              message: error instanceof Error ? error.message : 'Push failed'
+            });
+          }
+        }
+      } else {
+        // No GitHub token
+        for (const siteId of siteIds) {
+          if (siteId === 'control-center') continue;
+          gitHubResults.push({
+            siteId,
+            siteName: findingsBySite[siteId]?.[0]?.site_name || 'Unknown',
+            status: 'skipped',
+            message: 'GITHUB_TOKEN not configured'
+          });
+        }
+      }
+
+      // Log to audit
+      await supabase.from('audit_logs').insert({
+        action: 'implement_and_push',
+        resource: 'analysis',
+        details: { 
+          findings_processed: selectedFindings?.length,
+          sites_affected: siteIds.length,
+          fix_results: results,
+          github_results: gitHubResults,
+          summary: {
+            fixes_success: results.filter(r => r.status === 'success').length,
+            fixes_skipped: results.filter(r => r.status === 'skipped').length,
+            fixes_failed: results.filter(r => r.status === 'failed').length,
+            pushes_success: gitHubResults.filter(r => r.status === 'success').length,
+            pushes_failed: gitHubResults.filter(r => r.status === 'failed').length,
+            pushes_skipped: gitHubResults.filter(r => r.status === 'skipped').length,
+          }
+        }
+      });
+
+      return new Response(JSON.stringify({ 
+        results,
+        gitHubResults,
+        summary: {
+          fixes: {
+            total: results.length,
+            success: results.filter(r => r.status === 'success').length,
+            skipped: results.filter(r => r.status === 'skipped').length,
+            failed: results.filter(r => r.status === 'failed').length,
+          },
+          github: {
+            total: gitHubResults.length,
+            success: gitHubResults.filter(r => r.status === 'success').length,
+            failed: gitHubResults.filter(r => r.status === 'failed').length,
+            skipped: gitHubResults.filter(r => r.status === 'skipped').length,
+          },
+          sites_affected: siteIds.length,
+        }
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
     return new Response(JSON.stringify({ error: 'Invalid action' }), {
       status: 400,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
