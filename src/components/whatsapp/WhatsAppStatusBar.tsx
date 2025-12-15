@@ -10,7 +10,9 @@ interface WhatsAppStatusBarProps {
   onDisconnect: () => void;
 }
 
-const statusConfig: Record<WhatsAppConnectionStatus, {
+type StatusConfigKey = 'disconnected' | 'connecting' | 'qr-pending' | 'qr-required' | 'connected' | 'reconnecting';
+
+const statusConfig: Record<StatusConfigKey, {
   label: string;
   icon: React.ElementType;
   variant: 'default' | 'secondary' | 'destructive' | 'outline';
@@ -27,6 +29,12 @@ const statusConfig: Record<WhatsAppConnectionStatus, {
     icon: Loader2,
     variant: 'secondary',
     className: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20',
+  },
+  'qr-pending': {
+    label: 'Generating QR...',
+    icon: Loader2,
+    variant: 'secondary',
+    className: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
   },
   'qr-required': {
     label: 'Scan QR Code',
@@ -49,7 +57,7 @@ const statusConfig: Record<WhatsAppConnectionStatus, {
 };
 
 export function WhatsAppStatusBar({ status, phoneNumber, onDisconnect }: WhatsAppStatusBarProps) {
-  const config = statusConfig[status];
+  const config = statusConfig[status as StatusConfigKey] || statusConfig.disconnected;
   const StatusIcon = config.icon;
 
   return (

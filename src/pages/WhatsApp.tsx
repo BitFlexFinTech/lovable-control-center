@@ -42,19 +42,21 @@ export default function WhatsApp() {
     <DashboardLayout>
       <div className="h-[calc(100vh-4rem)] flex flex-col overflow-hidden">
         {/* Status Bar */}
-        <WhatsAppStatusBar 
-          status={status as WhatsAppConnectionStatus}
-          phoneNumber={session?.phoneNumber || null}
-          onDisconnect={disconnect}
-          settingsButton={
+        <div className="flex items-center justify-between">
+          <WhatsAppStatusBar 
+            status={status as WhatsAppConnectionStatus}
+            phoneNumber={session?.phoneNumber || null}
+            onDisconnect={disconnect}
+          />
+          <div className="px-4">
             <WhatsAppSettingsDialog
               isConnected={isConnected}
               phoneNumber={session?.phoneNumber || null}
               lastConnectedAt={session?.lastConnectedAt || null}
               onDisconnect={disconnect}
             />
-          }
-        />
+          </div>
+        </div>
 
         {/* Main Content */}
         <div className="flex-1 overflow-hidden">
