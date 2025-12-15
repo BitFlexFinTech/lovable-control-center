@@ -29,3 +29,6 @@ verify_jwt = false
 
 [functions.github-repo-visibility]
 verify_jwt = false
+
+[functions.github-push-changes]
+verify_jwt = false

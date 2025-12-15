@@ -564,6 +564,14 @@ export type Database = {
       }
       imported_apps: {
         Row: {
+          github_default_branch: string | null
+          github_last_commit_sha: string | null
+          github_last_push_at: string | null
+          github_repo_name: string | null
+          github_repo_owner: string | null
+          github_repo_url: string | null
+          github_visibility: string | null
+          github_visibility_updated_at: string | null
           id: string
           imported_at: string | null
           lovable_url: string
@@ -572,6 +580,14 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          github_default_branch?: string | null
+          github_last_commit_sha?: string | null
+          github_last_push_at?: string | null
+          github_repo_name?: string | null
+          github_repo_owner?: string | null
+          github_repo_url?: string | null
+          github_visibility?: string | null
+          github_visibility_updated_at?: string | null
           id?: string
           imported_at?: string | null
           lovable_url: string
@@ -580,6 +596,14 @@ export type Database = {
           user_id: string
         }
         Update: {
+          github_default_branch?: string | null
+          github_last_commit_sha?: string | null
+          github_last_push_at?: string | null
+          github_repo_name?: string | null
+          github_repo_owner?: string | null
+          github_repo_url?: string | null
+          github_visibility?: string | null
+          github_visibility_updated_at?: string | null
           id?: string
           imported_at?: string | null
           lovable_url?: string
