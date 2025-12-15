@@ -56,6 +56,7 @@ import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { CurrencyBalanceCards } from '@/components/billing/CurrencyBalanceCards';
 import { SitePaymentToggles } from '@/components/billing/SitePaymentToggles';
+import { UnifiedPaymentDashboard } from '@/components/billing/UnifiedPaymentDashboard';
 
 const gatewayIcons: Record<PaymentGateway, React.ReactNode> = {
   stripe: <CreditCard className="h-4 w-4" />,
@@ -83,6 +84,8 @@ const NexusPay = () => {
   const [isGodModeModalOpen, setIsGodModeModalOpen] = useState(false);
   const [godModeReason, setGodModeReason] = useState('');
   const [selectedProvider, setSelectedProvider] = useState<PaymentGateway | null>(null);
+  const [walletAddress, setWalletAddress] = useState('');
+  const [walletNetwork, setWalletNetwork] = useState('');
 
   const { data: transactions = [], isLoading: txLoading } = useNexusPayTransactions(selectedSiteId);
   const kpis = useNexusPayKPIs(selectedSiteId);
@@ -292,6 +295,7 @@ const NexusPay = () => {
         <Tabs defaultValue="transactions" className="space-y-4">
           <TabsList>
             <TabsTrigger value="transactions">Transactions</TabsTrigger>
+            <TabsTrigger value="all-sites">All Sites</TabsTrigger>
             <TabsTrigger value="providers">Providers</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
@@ -392,6 +396,10 @@ const NexusPay = () => {
                 </Table>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="all-sites" className="space-y-4">
+            <UnifiedPaymentDashboard />
           </TabsContent>
 
           <TabsContent value="providers" className="space-y-4">
@@ -573,7 +581,11 @@ const NexusPay = () => {
                     key={provider}
                     variant={selectedProvider === provider ? 'default' : 'outline'}
                     className="flex-col h-auto py-3 gap-1"
-                    onClick={() => setSelectedProvider(provider)}
+                    onClick={() => {
+                      setSelectedProvider(provider);
+                      setWalletAddress('');
+                      setWalletNetwork(provider === 'btc' ? 'bitcoin' : provider === 'eth' ? 'ethereum' : provider === 'usdt' ? 'trc20' : '');
+                    }}
                   >
                     {gatewayIcons[provider]}
                     <span className="capitalize text-xs">{provider}</span>
@@ -581,10 +593,67 @@ const NexusPay = () => {
                 ))}
               </div>
             </div>
+            
+            {/* Wallet Address Input for Crypto Providers */}
+            {selectedProvider && ['btc', 'usdt', 'eth'].includes(selectedProvider) && (
+              <div className="space-y-4 pt-2">
+                <div className="space-y-2">
+                  <Label>Wallet Address</Label>
+                  <div className="relative">
+                    <Wallet className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      value={walletAddress}
+                      onChange={(e) => setWalletAddress(e.target.value)}
+                      placeholder={`Enter your ${selectedProvider.toUpperCase()} wallet address`}
+                      className="pl-9 font-mono text-sm"
+                    />
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>Network</Label>
+                  <Select value={walletNetwork} onValueChange={setWalletNetwork}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select network" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {selectedProvider === 'btc' && (
+                        <>
+                          <SelectItem value="bitcoin">Bitcoin Mainnet</SelectItem>
+                          <SelectItem value="lightning">Lightning Network</SelectItem>
+                        </>
+                      )}
+                      {selectedProvider === 'eth' && (
+                        <>
+                          <SelectItem value="ethereum">Ethereum Mainnet</SelectItem>
+                          <SelectItem value="polygon">Polygon</SelectItem>
+                          <SelectItem value="arbitrum">Arbitrum</SelectItem>
+                          <SelectItem value="optimism">Optimism</SelectItem>
+                        </>
+                      )}
+                      {selectedProvider === 'usdt' && (
+                        <>
+                          <SelectItem value="trc20">TRC-20 (Tron)</SelectItem>
+                          <SelectItem value="erc20">ERC-20 (Ethereum)</SelectItem>
+                          <SelectItem value="bep20">BEP-20 (BSC)</SelectItem>
+                        </>
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsConnectModalOpen(false)}>Cancel</Button>
-            <Button onClick={handleConnectProvider} disabled={!selectedProvider || selectedSiteId === 'all'}>
+            <Button 
+              onClick={handleConnectProvider} 
+              disabled={
+                !selectedProvider || 
+                selectedSiteId === 'all' ||
+                (['btc', 'usdt', 'eth'].includes(selectedProvider || '') && !walletAddress)
+              }
+            >
               Connect
             </Button>
           </DialogFooter>
