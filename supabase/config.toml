@@ -26,3 +26,6 @@ verify_jwt = false
 
 [functions.whatsapp-bridge]
 verify_jwt = false
+
+[functions.github-repo-visibility]
+verify_jwt = false
