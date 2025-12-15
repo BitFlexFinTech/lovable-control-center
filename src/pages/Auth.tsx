@@ -8,8 +8,9 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
-import { Loader2, Mail, Lock, User, ArrowRight, Zap } from 'lucide-react';
+import { Loader2, Mail, Lock, User, ArrowRight, Zap, Shield, CheckCircle2 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import { ZACCLogo } from '@/components/layout/ZACCLogo';
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -21,6 +22,13 @@ const signupSchema = z.object({
   password: z.string().min(8, 'Password must be at least 8 characters'),
   fullName: z.string().min(2, 'Name must be at least 2 characters'),
 });
+
+const features = [
+  "Anonymous & secure reporting",
+  "Enterprise-grade compliance",
+  "Real-time case management",
+  "Multi-language support"
+];
 
 const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -36,14 +44,12 @@ const Auth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // GodMode: One-click Super Admin login
   const handleGodMode = async () => {
     setIsGodModeLoading(true);
-    const godModeEmail = 'superadmin@controlcenter.local';
+    const godModeEmail = 'superadmin@zacc.local';
     const godModePassword = 'GodMode123!';
     
     try {
-      // First try to sign in
       const signInResult = await signIn(godModeEmail, godModePassword);
       
       if (!signInResult.error) {
@@ -56,11 +62,9 @@ const Auth = () => {
         return;
       }
 
-      // If sign-in failed, try to create the account
       const signUpResult = await signUp(godModeEmail, godModePassword, 'Super Admin');
       
       if (!signUpResult.error) {
-        // Account created - with auto-confirm enabled, sign in immediately
         const retryLogin = await signIn(godModeEmail, godModePassword);
         if (!retryLogin.error) {
           toast({
@@ -75,7 +79,6 @@ const Auth = () => {
           });
         }
       } else if (signUpResult.error?.message?.includes('already registered')) {
-        // Account exists but sign-in failed - retry once more
         const finalAttempt = await signIn(godModeEmail, godModePassword);
         if (!finalAttempt.error) {
           toast({
@@ -86,7 +89,7 @@ const Auth = () => {
         } else {
           toast({
             title: 'GodMode Failed',
-            description: 'Could not access Super Admin account. Check credentials.',
+            description: 'Could not access Super Admin account.',
             variant: 'destructive',
           });
         }
@@ -100,7 +103,7 @@ const Auth = () => {
     } catch (err) {
       toast({
         title: 'GodMode Error',
-        description: 'An unexpected error occurred. Please try again.',
+        description: 'An unexpected error occurred.',
         variant: 'destructive',
       });
     }
@@ -192,190 +195,238 @@ const Auth = () => {
     } else {
       toast({
         title: 'Account created!',
-        description: 'Welcome to Control Center.',
+        description: 'Welcome to ZACC.',
       });
       navigate('/');
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-accent/5" />
-      
-      <Card className="w-full max-w-md relative z-10 border-border/50 shadow-2xl">
-        <CardHeader className="space-y-1 text-center">
-          <div className="mx-auto w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
-            <span className="text-2xl font-bold text-primary">CC</span>
+    <div className="min-h-screen flex bg-background">
+      {/* Left Panel - Hero Section */}
+      <div className="hidden lg:flex lg:w-1/2 hero-gradient relative overflow-hidden">
+        <div className="absolute inset-0 pattern-grid opacity-10" />
+        <div className="relative z-10 flex flex-col justify-center p-12 text-primary-foreground">
+          <div className="max-w-md">
+            <div className="flex items-center gap-3 mb-8">
+              <div className="bg-primary-foreground/20 rounded-xl p-3">
+                <Shield className="h-8 w-8" />
+              </div>
+              <span className="text-3xl font-bold tracking-tight">ZACC</span>
+            </div>
+            
+            <h1 className="text-4xl font-bold mb-4 leading-tight">
+              Unlock the Power of Trusted Conversations
+            </h1>
+            <p className="text-lg opacity-90 mb-8">
+              Empower your organization with secure, anonymous reporting channels. 
+              Build trust, ensure compliance, and protect your people.
+            </p>
+            
+            <div className="space-y-3">
+              {features.map((feature, index) => (
+                <div key={index} className="flex items-center gap-3">
+                  <CheckCircle2 className="h-5 w-5" />
+                  <span className="text-sm font-medium">{feature}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-12 pt-8 border-t border-primary-foreground/20">
+              <p className="text-sm opacity-75">Trusted by 500+ organizations worldwide</p>
+            </div>
           </div>
-          <CardTitle className="text-2xl font-bold">Control Center</CardTitle>
-          <CardDescription>
-            Manage all your sites from one place
-          </CardDescription>
-        </CardHeader>
-        
-        {/* GodMode Button */}
-        <div className="px-6 pb-4">
-          <Button 
-            variant="outline" 
-            className="w-full border-primary/50 bg-primary/5 hover:bg-primary/10 hover:border-primary text-primary font-semibold gap-2"
-            onClick={handleGodMode}
-            disabled={isGodModeLoading || isLoading}
-          >
-            {isGodModeLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Zap className="h-4 w-4" />
-            )}
-            GodMode
-          </Button>
-          <p className="text-xs text-center text-muted-foreground mt-2">
-            One-click Super Admin access
+        </div>
+      </div>
+
+      {/* Right Panel - Auth Forms */}
+      <div className="flex-1 flex items-center justify-center p-8">
+        <div className="w-full max-w-md">
+          {/* Mobile Logo */}
+          <div className="lg:hidden flex justify-center mb-8">
+            <ZACCLogo size="lg" />
+          </div>
+
+          <Card className="border-border shadow-elevated">
+            <CardHeader className="space-y-1 text-center pb-4">
+              <div className="hidden lg:block">
+                <ZACCLogo size="md" />
+              </div>
+              <CardTitle className="text-2xl font-bold mt-4">Welcome back</CardTitle>
+              <CardDescription>
+                Sign in to your account or create a new one
+              </CardDescription>
+            </CardHeader>
+            
+            {/* GodMode Button */}
+            <div className="px-6 pb-4">
+              <Button 
+                variant="outline" 
+                className="w-full border-primary/30 bg-hero-light hover:bg-primary/10 hover:border-primary text-primary font-semibold gap-2"
+                onClick={handleGodMode}
+                disabled={isGodModeLoading || isLoading}
+              >
+                {isGodModeLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Zap className="h-4 w-4" />
+                )}
+                GodMode
+              </Button>
+              <p className="text-xs text-center text-muted-foreground mt-2">
+                One-click Super Admin access
+              </p>
+            </div>
+
+            <div className="px-6">
+              <Separator className="mb-4" />
+            </div>
+
+            <Tabs defaultValue="login" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 mx-6 max-w-[calc(100%-3rem)]">
+                <TabsTrigger value="login">Log In</TabsTrigger>
+                <TabsTrigger value="signup">Sign Up</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="login">
+                <form onSubmit={handleLogin}>
+                  <CardContent className="space-y-4 pt-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="login-email">Email</Label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="login-email"
+                          type="email"
+                          placeholder="name@example.com"
+                          className="pl-9"
+                          value={loginEmail}
+                          onChange={(e) => setLoginEmail(e.target.value)}
+                          disabled={isLoading}
+                        />
+                      </div>
+                      {errors.login_email && (
+                        <p className="text-sm text-destructive">{errors.login_email}</p>
+                      )}
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="login-password">Password</Label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="login-password"
+                          type="password"
+                          placeholder="••••••••"
+                          className="pl-9"
+                          value={loginPassword}
+                          onChange={(e) => setLoginPassword(e.target.value)}
+                          disabled={isLoading}
+                        />
+                      </div>
+                      {errors.login_password && (
+                        <p className="text-sm text-destructive">{errors.login_password}</p>
+                      )}
+                    </div>
+                  </CardContent>
+                  
+                  <CardFooter>
+                    <Button type="submit" className="w-full" disabled={isLoading}>
+                      {isLoading ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <ArrowRight className="mr-2 h-4 w-4" />
+                      )}
+                      Log In
+                    </Button>
+                  </CardFooter>
+                </form>
+              </TabsContent>
+              
+              <TabsContent value="signup">
+                <form onSubmit={handleSignup}>
+                  <CardContent className="space-y-4 pt-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-name">Full Name</Label>
+                      <div className="relative">
+                        <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="signup-name"
+                          type="text"
+                          placeholder="John Doe"
+                          className="pl-9"
+                          value={signupName}
+                          onChange={(e) => setSignupName(e.target.value)}
+                          disabled={isLoading}
+                        />
+                      </div>
+                      {errors.signup_fullName && (
+                        <p className="text-sm text-destructive">{errors.signup_fullName}</p>
+                      )}
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-email">Email</Label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="signup-email"
+                          type="email"
+                          placeholder="name@example.com"
+                          className="pl-9"
+                          value={signupEmail}
+                          onChange={(e) => setSignupEmail(e.target.value)}
+                          disabled={isLoading}
+                        />
+                      </div>
+                      {errors.signup_email && (
+                        <p className="text-sm text-destructive">{errors.signup_email}</p>
+                      )}
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-password">Password</Label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="signup-password"
+                          type="password"
+                          placeholder="••••••••"
+                          className="pl-9"
+                          value={signupPassword}
+                          onChange={(e) => setSignupPassword(e.target.value)}
+                          disabled={isLoading}
+                        />
+                      </div>
+                      {errors.signup_password && (
+                        <p className="text-sm text-destructive">{errors.signup_password}</p>
+                      )}
+                      <p className="text-xs text-muted-foreground">
+                        Must be at least 8 characters
+                      </p>
+                    </div>
+                  </CardContent>
+                  
+                  <CardFooter>
+                    <Button type="submit" className="w-full" disabled={isLoading}>
+                      {isLoading ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <ArrowRight className="mr-2 h-4 w-4" />
+                      )}
+                      Create Account
+                    </Button>
+                  </CardFooter>
+                </form>
+              </TabsContent>
+            </Tabs>
+          </Card>
+
+          <p className="text-center text-sm text-muted-foreground mt-6">
+            By continuing, you agree to ZACC's Terms of Service and Privacy Policy.
           </p>
         </div>
-
-        <div className="px-6">
-          <Separator className="mb-4" />
-        </div>
-
-        <Tabs defaultValue="login" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mx-6 max-w-[calc(100%-3rem)]">
-            <TabsTrigger value="login">Log In</TabsTrigger>
-            <TabsTrigger value="signup">Sign Up</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="login">
-            <form onSubmit={handleLogin}>
-              <CardContent className="space-y-4 pt-4">
-                <div className="space-y-2">
-                  <Label htmlFor="login-email">Email</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="login-email"
-                      type="email"
-                      placeholder="name@example.com"
-                      className="pl-9"
-                      value={loginEmail}
-                      onChange={(e) => setLoginEmail(e.target.value)}
-                      disabled={isLoading}
-                    />
-                  </div>
-                  {errors.login_email && (
-                    <p className="text-sm text-destructive">{errors.login_email}</p>
-                  )}
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="login-password">Password</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="login-password"
-                      type="password"
-                      placeholder="••••••••"
-                      className="pl-9"
-                      value={loginPassword}
-                      onChange={(e) => setLoginPassword(e.target.value)}
-                      disabled={isLoading}
-                    />
-                  </div>
-                  {errors.login_password && (
-                    <p className="text-sm text-destructive">{errors.login_password}</p>
-                  )}
-                </div>
-              </CardContent>
-              
-              <CardFooter>
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <ArrowRight className="mr-2 h-4 w-4" />
-                  )}
-                  Log In
-                </Button>
-              </CardFooter>
-            </form>
-          </TabsContent>
-          
-          <TabsContent value="signup">
-            <form onSubmit={handleSignup}>
-              <CardContent className="space-y-4 pt-4">
-                <div className="space-y-2">
-                  <Label htmlFor="signup-name">Full Name</Label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="signup-name"
-                      type="text"
-                      placeholder="John Doe"
-                      className="pl-9"
-                      value={signupName}
-                      onChange={(e) => setSignupName(e.target.value)}
-                      disabled={isLoading}
-                    />
-                  </div>
-                  {errors.signup_fullName && (
-                    <p className="text-sm text-destructive">{errors.signup_fullName}</p>
-                  )}
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="signup-email">Email</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="signup-email"
-                      type="email"
-                      placeholder="name@example.com"
-                      className="pl-9"
-                      value={signupEmail}
-                      onChange={(e) => setSignupEmail(e.target.value)}
-                      disabled={isLoading}
-                    />
-                  </div>
-                  {errors.signup_email && (
-                    <p className="text-sm text-destructive">{errors.signup_email}</p>
-                  )}
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="signup-password">Password</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="signup-password"
-                      type="password"
-                      placeholder="••••••••"
-                      className="pl-9"
-                      value={signupPassword}
-                      onChange={(e) => setSignupPassword(e.target.value)}
-                      disabled={isLoading}
-                    />
-                  </div>
-                  {errors.signup_password && (
-                    <p className="text-sm text-destructive">{errors.signup_password}</p>
-                  )}
-                  <p className="text-xs text-muted-foreground">
-                    Must be at least 8 characters
-                  </p>
-                </div>
-              </CardContent>
-              
-              <CardFooter>
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <ArrowRight className="mr-2 h-4 w-4" />
-                  )}
-                  Create Account
-                </Button>
-              </CardFooter>
-            </form>
-          </TabsContent>
-        </Tabs>
-      </Card>
+      </div>
     </div>
   );
 };
