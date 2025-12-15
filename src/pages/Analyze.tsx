@@ -3,7 +3,7 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Search, Play, Loader2, CheckCircle2, AlertTriangle, XCircle, Zap, Building2, RefreshCw } from 'lucide-react';
+import { Search, Play, Loader2, CheckCircle2, AlertTriangle, XCircle, Zap, Building2, RefreshCw, Github, Lock, Eye } from 'lucide-react';
 import { AnalysisProgress } from '@/components/analyze/AnalysisProgress';
 import { AnalysisFindings } from '@/components/analyze/AnalysisFindings';
 import { ImplementationPreview } from '@/components/analyze/ImplementationPreview';
@@ -20,6 +20,22 @@ import {
   type SiteRequirement,
   type SiteSuggestion,
 } from '@/utils/analyzeSystemPrompt';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 // Legacy interface for backward compatibility
 export interface AnalysisFinding {
@@ -56,6 +72,32 @@ interface ProgressLog {
   siteName?: string;
 }
 
+interface RepoVisibilityResult {
+  siteId: string;
+  siteName: string;
+  repoName: string;
+  repoOwner: string;
+  currentVisibility: string;
+  newVisibility: string;
+  status: 'success' | 'failed' | 'skipped';
+  message: string;
+}
+
+interface VisibilityReport {
+  inventory: RepoVisibilityResult[];
+  summary: {
+    total: number;
+    success: number;
+    failed: number;
+    skipped: number;
+  };
+  finalAcceptance: {
+    allPrivate: boolean;
+    residualRisks: string[];
+    conclusion: string;
+  };
+}
+
 export default function Analyze() {
   const [state, setState] = useState<AnalysisState>('idle');
   const [modules, setModules] = useState<AnalysisModule[]>(
@@ -66,6 +108,9 @@ export default function Analyze() {
   const [progressLogs, setProgressLogs] = useState<ProgressLog[]>([]);
   const [showImplementation, setShowImplementation] = useState(false);
   const [currentPhase, setCurrentPhase] = useState('Initializing...');
+  const [showVisibilityDialog, setShowVisibilityDialog] = useState(false);
+  const [visibilityReport, setVisibilityReport] = useState<VisibilityReport | null>(null);
+  const [visibilityLoading, setVisibilityLoading] = useState(false);
   const { toast } = useToast();
 
   // Add log helper
@@ -73,6 +118,56 @@ export default function Analyze() {
     const timestamp = new Date().toLocaleTimeString();
     setProgressLogs(prev => [...prev, { timestamp, message, type, siteId, siteName }]);
   }, []);
+
+  // GitHub visibility scan
+  const scanRepoVisibility = useCallback(async () => {
+    setVisibilityLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('github-repo-visibility', {
+        body: { action: 'scan' }
+      });
+
+      if (error) throw error;
+      setVisibilityReport(data);
+      setShowVisibilityDialog(true);
+    } catch (error) {
+      console.error('Visibility scan error:', error);
+      toast({
+        title: "Scan Failed",
+        description: error instanceof Error ? error.message : "Failed to scan repositories",
+        variant: "destructive"
+      });
+    } finally {
+      setVisibilityLoading(false);
+    }
+  }, [toast]);
+
+  // GitHub visibility remediation
+  const remediateRepoVisibility = useCallback(async () => {
+    setVisibilityLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('github-repo-visibility', {
+        body: { action: 'remediate' }
+      });
+
+      if (error) throw error;
+      setVisibilityReport(data);
+      
+      toast({
+        title: data.finalAcceptance.allPrivate ? "All Repositories Private" : "Remediation Complete",
+        description: data.finalAcceptance.conclusion
+      });
+    } catch (error) {
+      console.error('Remediation error:', error);
+      toast({
+        title: "Remediation Failed",
+        description: error instanceof Error ? error.message : "Failed to change repository visibility",
+        variant: "destructive"
+      });
+    } finally {
+      setVisibilityLoading(false);
+    }
+  }, [toast]);
 
   const runAnalysis = useCallback(async () => {
     setState('running');
@@ -375,14 +470,24 @@ export default function Analyze() {
           </div>
           
           {state === 'idle' && (
-            <Button onClick={runAnalysis} size="lg" className="gap-2">
-              <Play className="h-4 w-4" />
-              Run Analysis
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={scanRepoVisibility} disabled={visibilityLoading} className="gap-2">
+                <Github className="h-4 w-4" />
+                Repo Visibility
+              </Button>
+              <Button onClick={runAnalysis} size="lg" className="gap-2">
+                <Play className="h-4 w-4" />
+                Run Analysis
+              </Button>
+            </div>
           )}
           
           {state === 'complete' && (
             <div className="flex gap-2">
+              <Button variant="outline" onClick={scanRepoVisibility} disabled={visibilityLoading} className="gap-2">
+                <Github className="h-4 w-4" />
+                Repo Visibility
+              </Button>
               <Button variant="outline" onClick={() => { setState('idle'); setFindings([]); setSiteReports([]); }}>
                 <RefreshCw className="h-4 w-4 mr-2" />
                 New Analysis
@@ -522,6 +627,101 @@ export default function Analyze() {
             setSiteReports([]);
           }}
         />
+
+        {/* GitHub Visibility Dialog */}
+        <Dialog open={showVisibilityDialog} onOpenChange={setShowVisibilityDialog}>
+          <DialogContent className="max-w-4xl max-h-[80vh]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Github className="h-5 w-5" />
+                GitHub Repository Visibility Report
+              </DialogTitle>
+              <DialogDescription>
+                {visibilityReport?.finalAcceptance.conclusion || 'Scan imported sites for GitHub repository visibility status'}
+              </DialogDescription>
+            </DialogHeader>
+            
+            {visibilityReport && (
+              <div className="space-y-4">
+                {/* Summary */}
+                <div className="grid grid-cols-4 gap-3">
+                  <div className="text-center p-3 bg-muted/50 rounded-lg">
+                    <p className="text-xl font-bold">{visibilityReport.summary.total}</p>
+                    <p className="text-xs text-muted-foreground">Total Repos</p>
+                  </div>
+                  <div className="text-center p-3 bg-green-500/10 rounded-lg">
+                    <p className="text-xl font-bold text-green-500">{visibilityReport.summary.success}</p>
+                    <p className="text-xs text-muted-foreground">Private</p>
+                  </div>
+                  <div className="text-center p-3 bg-red-500/10 rounded-lg">
+                    <p className="text-xl font-bold text-red-500">{visibilityReport.summary.failed}</p>
+                    <p className="text-xs text-muted-foreground">Failed</p>
+                  </div>
+                  <div className="text-center p-3 bg-yellow-500/10 rounded-lg">
+                    <p className="text-xl font-bold text-yellow-500">{visibilityReport.summary.skipped}</p>
+                    <p className="text-xs text-muted-foreground">Skipped</p>
+                  </div>
+                </div>
+
+                {/* Inventory Table */}
+                <ScrollArea className="h-[300px] border rounded-lg">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Site</TableHead>
+                        <TableHead>Repository</TableHead>
+                        <TableHead>Current</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Message</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {visibilityReport.inventory.map((item, idx) => (
+                        <TableRow key={idx}>
+                          <TableCell className="font-medium">{item.siteName}</TableCell>
+                          <TableCell className="font-mono text-xs">{item.repoOwner}/{item.repoName}</TableCell>
+                          <TableCell>
+                            <Badge variant={item.currentVisibility === 'private' ? 'default' : 'outline'} className="gap-1">
+                              {item.currentVisibility === 'private' ? <Lock className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                              {item.currentVisibility}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={item.status === 'success' ? 'default' : item.status === 'failed' ? 'destructive' : 'secondary'}>
+                              {item.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">{item.message}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </ScrollArea>
+
+                {/* Residual Risks */}
+                {visibilityReport.finalAcceptance.residualRisks.length > 0 && (
+                  <div className="p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                    <p className="font-medium text-yellow-600 mb-2">Residual Risks:</p>
+                    <ul className="text-sm text-muted-foreground list-disc pl-4 space-y-1">
+                      {visibilityReport.finalAcceptance.residualRisks.map((risk, idx) => (
+                        <li key={idx}>{risk}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Actions */}
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" onClick={() => setShowVisibilityDialog(false)}>Close</Button>
+                  <Button onClick={remediateRepoVisibility} disabled={visibilityLoading} className="gap-2">
+                    {visibilityLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
+                    Make All Private
+                  </Button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );

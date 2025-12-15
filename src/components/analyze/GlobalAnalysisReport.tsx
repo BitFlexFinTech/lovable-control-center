@@ -12,10 +12,12 @@ import {
   FileText,
   Download,
   Zap,
+  Table as TableIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { SiteAnalysisReport } from '@/utils/analyzeSystemPrompt';
 import { SiteReportCard } from './SiteReportCard';
+import { RequirementMatrix } from './RequirementMatrix';
 
 interface GlobalAnalysisReportProps {
   siteReports: SiteAnalysisReport[];
@@ -140,8 +142,12 @@ export function GlobalAnalysisReport({
 
       {/* Site Reports */}
       <Tabs defaultValue="all" className="w-full">
-        <TabsList className="mb-4">
+        <TabsList className="mb-4 flex-wrap">
           <TabsTrigger value="all">All ({siteReports.length})</TabsTrigger>
+          <TabsTrigger value="matrix" className="gap-1">
+            <TableIcon className="h-3 w-3" />
+            Requirement Matrix
+          </TabsTrigger>
           {controlCenterReport && (
             <TabsTrigger value="control-center" className="gap-1">
               <Building2 className="h-3 w-3" />
@@ -178,6 +184,13 @@ export function GlobalAnalysisReport({
               onToggleSuggestion={onToggleSuggestion}
             />
           ))}
+        </TabsContent>
+
+        <TabsContent value="matrix">
+          <RequirementMatrix
+            siteReports={siteReports}
+            onToggleRequirement={onToggleRequirement}
+          />
         </TabsContent>
 
         <TabsContent value="control-center" className="space-y-4">
