@@ -1,17 +1,27 @@
 import { useState } from 'react';
-import { Search, Filter, MoreVertical } from 'lucide-react';
+import { Search, Filter } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import type { WhatsAppChat } from './WhatsAppChatsPanel';
+
+export interface WhatsAppChatListItem {
+  id: string;
+  name: string;
+  phone: string;
+  avatar?: string;
+  lastMessage: string;
+  timestamp: string;
+  unreadCount: number;
+  isOnline?: boolean;
+}
 
 interface WhatsAppChatListProps {
-  chats: WhatsAppChat[];
+  chats: WhatsAppChatListItem[];
   selectedChatId?: string;
-  onSelectChat: (chat: WhatsAppChat) => void;
+  onSelectChat: (chat: WhatsAppChatListItem) => void;
 }
 
 export function WhatsAppChatList({ chats, selectedChatId, onSelectChat }: WhatsAppChatListProps) {
