@@ -35,6 +35,7 @@ import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import NexusPay from "./pages/NexusPay";
 import Analyze from "./pages/Analyze";
+import WhatsApp from "./pages/WhatsApp";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -136,6 +137,11 @@ const App = () => (
                                 <Route path="/analyze" element={
                                   <ProtectedRoute>
                                     <Analyze />
+                                  </ProtectedRoute>
+                                } />
+                                <Route path="/whatsapp" element={
+                                  <ProtectedRoute>
+                                    <WhatsApp />
                                   </ProtectedRoute>
                                 } />
                                 <Route path="*" element={<NotFound />} />
