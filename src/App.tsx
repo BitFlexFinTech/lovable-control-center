@@ -36,8 +36,6 @@ import NotFound from "./pages/NotFound";
 import NexusPay from "./pages/NexusPay";
 import Analyze from "./pages/Analyze";
 import WhatsApp from "@/pages/WhatsApp";
-import StreamEngine from "./pages/StreamEngine";
-import QuantOps from "./pages/QuantOps";
 import { AIChatPanel } from "@/components/ai/AIChatPanel";
 
 const queryClient = new QueryClient({
@@ -145,16 +143,6 @@ const App = () => (
                                 <Route path="/whatsapp" element={
                                   <ProtectedRoute>
                                     <WhatsApp />
-                                  </ProtectedRoute>
-                                } />
-                                <Route path="/streamengine" element={
-                                  <ProtectedRoute>
-                                    <StreamEngine />
-                                  </ProtectedRoute>
-                                } />
-                                <Route path="/quantops" element={
-                                  <ProtectedRoute>
-                                    <QuantOps />
                                   </ProtectedRoute>
                                 } />
                                 <Route path="*" element={<NotFound />} />

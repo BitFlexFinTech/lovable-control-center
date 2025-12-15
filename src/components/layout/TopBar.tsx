@@ -22,7 +22,7 @@ export function TopBar() {
   return (
     <>
       <ImpersonationBanner />
-      <header className="h-16 border-b border-border bg-card/80 backdrop-blur-lg sticky top-0 z-40">
+      <header className="h-16 border-b border-border bg-card/50 backdrop-blur-lg sticky top-0 z-40">
         <div className="flex items-center justify-between h-full px-4 md:px-6">
           {/* Left side - Mobile Menu + Tenant Switcher */}
           <div className="flex items-center gap-2">

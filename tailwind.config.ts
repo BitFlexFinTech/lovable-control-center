@@ -66,14 +66,6 @@ export default {
           elevated: "hsl(var(--surface-elevated))",
           overlay: "hsl(var(--surface-overlay))",
         },
-        hero: {
-          DEFAULT: "hsl(263 70% 50%)",
-          light: "hsl(263 70% 97%)",
-        },
-        trust: {
-          DEFAULT: "hsl(220 14% 96%)",
-          foreground: "hsl(220 10% 46%)",
-        },
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -81,8 +73,7 @@ export default {
         sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
-        sans: ['DM Sans', 'Inter', 'system-ui', '-apple-system', 'sans-serif'],
-        display: ['DM Sans', 'Inter', 'system-ui', 'sans-serif'],
+        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
       },
       keyframes: {
         "accordion-down": {
