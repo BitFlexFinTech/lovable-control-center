@@ -1,149 +1,157 @@
-import { useState } from 'react';
-import { WhatsAppChatList } from './WhatsAppChatList';
+import { useState, useEffect } from 'react';
+import { WhatsAppChatList, type WhatsAppChatListItem } from './WhatsAppChatList';
 import { WhatsAppMessageThread } from './WhatsAppMessageThread';
+import { useWhatsAppChats, type WhatsAppChat } from '@/hooks/useWhatsAppChats';
+import { useWhatsAppMessages } from '@/hooks/useWhatsAppMessages';
+import { Skeleton } from '@/components/ui/skeleton';
+import { MessageSquare } from 'lucide-react';
 
-export interface WhatsAppChat {
-  id: string;
-  name: string;
-  phone: string;
-  avatar?: string;
-  lastMessage: string;
-  timestamp: string;
-  unreadCount: number;
-  isOnline?: boolean;
+// Re-export types for backward compatibility
+export type { WhatsAppChat } from '@/hooks/useWhatsAppChats';
+export type { WhatsAppMessage } from '@/hooks/useWhatsAppMessages';
+
+interface WhatsAppChatsPanelProps {
+  sessionId: string;
 }
 
-export interface WhatsAppMessage {
-  id: string;
-  content: string;
-  timestamp: string;
-  direction: 'inbound' | 'outbound';
-  status: 'sent' | 'delivered' | 'read' | 'failed';
-}
+export function WhatsAppChatsPanel({ sessionId }: WhatsAppChatsPanelProps) {
+  const { chats, isLoading: chatsLoading, markAsRead } = useWhatsAppChats(sessionId);
+  const [selectedChat, setSelectedChat] = useState<WhatsAppChat | null>(null);
+  
+  const { 
+    messages, 
+    isLoading: messagesLoading, 
+    sendMessage,
+    isSending,
+  } = useWhatsAppMessages(selectedChat?.id);
 
-const mockChats: WhatsAppChat[] = [
-  {
-    id: '1',
-    name: 'John Smith',
-    phone: '+1 (555) 234-5678',
-    lastMessage: 'Thanks for the quick response! I\'ll check it out.',
-    timestamp: '2 min ago',
-    unreadCount: 2,
-    isOnline: true,
-  },
-  {
-    id: '2',
-    name: 'Sarah Johnson',
-    phone: '+1 (555) 345-6789',
-    lastMessage: 'When will my order arrive?',
-    timestamp: '15 min ago',
-    unreadCount: 1,
-    isOnline: true,
-  },
-  {
-    id: '3',
-    name: 'Mike Williams',
-    phone: '+1 (555) 456-7890',
-    lastMessage: 'Perfect, thank you!',
-    timestamp: '1 hour ago',
-    unreadCount: 0,
-    isOnline: false,
-  },
-  {
-    id: '4',
-    name: 'Emma Davis',
-    phone: '+1 (555) 567-8901',
-    lastMessage: 'Can I get a refund for my purchase?',
-    timestamp: '3 hours ago',
-    unreadCount: 0,
-    isOnline: false,
-  },
-  {
-    id: '5',
-    name: 'Alex Brown',
-    phone: '+1 (555) 678-9012',
-    lastMessage: 'Great service! Will recommend to friends.',
-    timestamp: 'Yesterday',
-    unreadCount: 0,
-    isOnline: false,
-  },
-];
-
-const mockMessages: Record<string, WhatsAppMessage[]> = {
-  '1': [
-    { id: '1', content: 'Hi! I have a question about your product.', timestamp: '10:30 AM', direction: 'inbound', status: 'read' },
-    { id: '2', content: 'Hello John! Of course, I\'d be happy to help. What would you like to know?', timestamp: '10:31 AM', direction: 'outbound', status: 'read' },
-    { id: '3', content: 'Do you offer international shipping?', timestamp: '10:32 AM', direction: 'inbound', status: 'read' },
-    { id: '4', content: 'Yes, we ship to over 50 countries! Shipping rates depend on your location. You can check the exact cost at checkout.', timestamp: '10:33 AM', direction: 'outbound', status: 'read' },
-    { id: '5', content: 'Thanks for the quick response! I\'ll check it out.', timestamp: '10:35 AM', direction: 'inbound', status: 'read' },
-  ],
-  '2': [
-    { id: '1', content: 'Hello, I placed an order yesterday', timestamp: '9:00 AM', direction: 'inbound', status: 'read' },
-    { id: '2', content: 'Hi Sarah! Let me check that for you. What\'s your order number?', timestamp: '9:05 AM', direction: 'outbound', status: 'read' },
-    { id: '3', content: 'It\'s #ORD-12345', timestamp: '9:06 AM', direction: 'inbound', status: 'read' },
-    { id: '4', content: 'When will my order arrive?', timestamp: '9:15 AM', direction: 'inbound', status: 'read' },
-  ],
-};
-
-export function WhatsAppChatsPanel() {
-  const [selectedChat, setSelectedChat] = useState<WhatsAppChat | null>(mockChats[0]);
-  const [messages, setMessages] = useState<WhatsAppMessage[]>(mockMessages['1'] || []);
+  // Auto-select first chat when chats load
+  useEffect(() => {
+    if (chats.length > 0 && !selectedChat) {
+      setSelectedChat(chats[0]);
+    }
+  }, [chats, selectedChat]);
 
   const handleSelectChat = (chat: WhatsAppChat) => {
     setSelectedChat(chat);
-    setMessages(mockMessages[chat.id] || []);
+    // Mark chat as read when selected
+    if (chat.unreadCount > 0) {
+      markAsRead(chat.id);
+    }
   };
 
-  const handleSendMessage = (content: string) => {
-    const newMessage: WhatsAppMessage = {
-      id: Date.now().toString(),
-      content,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      direction: 'outbound',
-      status: 'sent',
-    };
-    setMessages(prev => [...prev, newMessage]);
-
-    // Simulate delivery
-    setTimeout(() => {
-      setMessages(prev => 
-        prev.map(m => m.id === newMessage.id ? { ...m, status: 'delivered' } : m)
-      );
-    }, 1000);
-
-    // Simulate read
-    setTimeout(() => {
-      setMessages(prev => 
-        prev.map(m => m.id === newMessage.id ? { ...m, status: 'read' } : m)
-      );
-    }, 2000);
+  const handleSendMessage = async (content: string) => {
+    await sendMessage(content);
   };
+
+  // Format messages for the thread component
+  const formattedMessages = messages.map((msg) => ({
+    id: msg.id,
+    content: msg.content,
+    timestamp: new Date(msg.timestamp).toLocaleTimeString([], { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    }),
+    direction: msg.direction,
+    status: msg.status,
+  }));
+
+  // Format chat for the thread component
+  const formattedSelectedChat = selectedChat ? {
+    id: selectedChat.id,
+    name: selectedChat.name,
+    phone: selectedChat.phone,
+    avatar: selectedChat.avatar,
+    lastMessage: selectedChat.lastMessage,
+    timestamp: selectedChat.lastMessageAt 
+      ? formatTimeAgo(selectedChat.lastMessageAt)
+      : '',
+    unreadCount: selectedChat.unreadCount,
+    isOnline: false, // Would need real presence data
+  } : null;
+
+  if (chatsLoading) {
+    return (
+      <div className="h-full flex overflow-hidden border-t border-border">
+        {/* Chat List Skeleton */}
+        <div className="w-80 border-r border-border flex-shrink-0 p-4 space-y-4">
+          <Skeleton className="h-9 w-full" />
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-3">
+              <Skeleton className="h-12 w-12 rounded-full" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-3 w-32" />
+              </div>
+            </div>
+          ))}
+        </div>
+        {/* Message Thread Skeleton */}
+        <div className="flex-1 flex items-center justify-center">
+          <Skeleton className="h-8 w-48" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full flex overflow-hidden border-t border-border">
       {/* Chat List */}
       <div className="w-80 border-r border-border flex-shrink-0 overflow-hidden">
         <WhatsAppChatList 
-          chats={mockChats}
+          chats={chats.map(c => ({
+            id: c.id,
+            name: c.name,
+            phone: c.phone,
+            avatar: c.avatar || '',
+            lastMessage: c.lastMessage,
+            timestamp: c.lastMessageAt ? formatTimeAgo(c.lastMessageAt) : '',
+            unreadCount: c.unreadCount,
+            isOnline: false,
+          } as WhatsAppChatListItem))}
           selectedChatId={selectedChat?.id}
-          onSelectChat={handleSelectChat}
+          onSelectChat={(chat: WhatsAppChatListItem) => {
+            const fullChat = chats.find(c => c.id === chat.id);
+            if (fullChat) handleSelectChat(fullChat);
+          }}
         />
       </div>
 
       {/* Message Thread */}
       <div className="flex-1 overflow-hidden">
-        {selectedChat ? (
+        {formattedSelectedChat ? (
           <WhatsAppMessageThread 
-            chat={selectedChat}
-            messages={messages}
+            chat={formattedSelectedChat}
+            messages={formattedMessages}
             onSendMessage={handleSendMessage}
+            isLoading={messagesLoading}
+            isSending={isSending}
           />
         ) : (
-          <div className="h-full flex items-center justify-center text-muted-foreground">
-            <p>Select a chat to start messaging</p>
+          <div className="h-full flex flex-col items-center justify-center text-muted-foreground bg-muted/20">
+            <MessageSquare className="h-16 w-16 mb-4 opacity-50" />
+            <p className="text-lg font-medium">No chats yet</p>
+            <p className="text-sm">Messages will appear here when you receive them</p>
           </div>
         )}
       </div>
     </div>
   );
+}
+
+function formatTimeAgo(dateString: string): string {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins} min ago`;
+  if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 7) return `${diffDays} days ago`;
+  
+  return date.toLocaleDateString();
 }
