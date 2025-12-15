@@ -14,6 +14,116 @@ export type Database = {
   }
   public: {
     Tables: {
+      accounting_documents: {
+        Row: {
+          created_at: string | null
+          document_type: string
+          extracted_data: Json | null
+          file_name: string | null
+          file_url: string
+          id: string
+          processing_status: string | null
+          site_id: string | null
+          transaction_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          document_type: string
+          extracted_data?: Json | null
+          file_name?: string | null
+          file_url: string
+          id?: string
+          processing_status?: string | null
+          site_id?: string | null
+          transaction_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          document_type?: string
+          extracted_data?: Json | null
+          file_name?: string | null
+          file_url?: string
+          id?: string
+          processing_status?: string | null
+          site_id?: string | null
+          transaction_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accounting_documents_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accounting_documents_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "accounting_transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      accounting_transactions: {
+        Row: {
+          ai_extracted_data: Json | null
+          amount: number
+          category: string | null
+          created_at: string | null
+          currency: string | null
+          description: string | null
+          id: string
+          receipt_url: string | null
+          site_id: string | null
+          tags: Json | null
+          transaction_date: string
+          type: string
+          updated_at: string | null
+          vendor: string | null
+        }
+        Insert: {
+          ai_extracted_data?: Json | null
+          amount: number
+          category?: string | null
+          created_at?: string | null
+          currency?: string | null
+          description?: string | null
+          id?: string
+          receipt_url?: string | null
+          site_id?: string | null
+          tags?: Json | null
+          transaction_date: string
+          type: string
+          updated_at?: string | null
+          vendor?: string | null
+        }
+        Update: {
+          ai_extracted_data?: Json | null
+          amount?: number
+          category?: string | null
+          created_at?: string | null
+          currency?: string | null
+          description?: string | null
+          id?: string
+          receipt_url?: string | null
+          site_id?: string | null
+          tags?: Json | null
+          transaction_date?: string
+          type?: string
+          updated_at?: string | null
+          vendor?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accounting_transactions_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       admin_impersonation_sessions: {
         Row: {
           admin_user_id: string
@@ -43,6 +153,59 @@ export type Database = {
           started_at?: string | null
         }
         Relationships: []
+      }
+      ai_personas: {
+        Row: {
+          avatar_url: string | null
+          capabilities: Json | null
+          created_at: string | null
+          daily_schedule: Json | null
+          id: string
+          name: string
+          personality: Json | null
+          role: string
+          site_id: string | null
+          status: string | null
+          system_prompt: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          capabilities?: Json | null
+          created_at?: string | null
+          daily_schedule?: Json | null
+          id?: string
+          name: string
+          personality?: Json | null
+          role: string
+          site_id?: string | null
+          status?: string | null
+          system_prompt?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          capabilities?: Json | null
+          created_at?: string | null
+          daily_schedule?: Json | null
+          id?: string
+          name?: string
+          personality?: Json | null
+          role?: string
+          site_id?: string | null
+          status?: string | null
+          system_prompt?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_personas_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       analysis_runs: {
         Row: {
@@ -288,6 +451,228 @@ export type Database = {
           },
           {
             foreignKeyName: "credentials_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_activities: {
+        Row: {
+          activity_type: string
+          completed_at: string | null
+          created_at: string | null
+          deal_id: string | null
+          description: string | null
+          id: string
+          lead_id: string | null
+          outcome: string | null
+          persona_id: string | null
+          scheduled_at: string | null
+          site_id: string | null
+          subject: string | null
+        }
+        Insert: {
+          activity_type: string
+          completed_at?: string | null
+          created_at?: string | null
+          deal_id?: string | null
+          description?: string | null
+          id?: string
+          lead_id?: string | null
+          outcome?: string | null
+          persona_id?: string | null
+          scheduled_at?: string | null
+          site_id?: string | null
+          subject?: string | null
+        }
+        Update: {
+          activity_type?: string
+          completed_at?: string | null
+          created_at?: string | null
+          deal_id?: string | null
+          description?: string | null
+          id?: string
+          lead_id?: string | null
+          outcome?: string | null
+          persona_id?: string | null
+          scheduled_at?: string | null
+          site_id?: string | null
+          subject?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_activities_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "crm_deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_activities_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "crm_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_activities_persona_id_fkey"
+            columns: ["persona_id"]
+            isOneToOne: false
+            referencedRelation: "ai_personas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_activities_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_deals: {
+        Row: {
+          created_at: string | null
+          currency: string | null
+          expected_close_date: string | null
+          id: string
+          lead_id: string | null
+          notes: string | null
+          persona_id: string | null
+          probability: number | null
+          site_id: string | null
+          stage: string | null
+          title: string
+          updated_at: string | null
+          value: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          currency?: string | null
+          expected_close_date?: string | null
+          id?: string
+          lead_id?: string | null
+          notes?: string | null
+          persona_id?: string | null
+          probability?: number | null
+          site_id?: string | null
+          stage?: string | null
+          title: string
+          updated_at?: string | null
+          value?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          currency?: string | null
+          expected_close_date?: string | null
+          id?: string
+          lead_id?: string | null
+          notes?: string | null
+          persona_id?: string | null
+          probability?: number | null
+          site_id?: string | null
+          stage?: string | null
+          title?: string
+          updated_at?: string | null
+          value?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_deals_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "crm_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_deals_persona_id_fkey"
+            columns: ["persona_id"]
+            isOneToOne: false
+            referencedRelation: "ai_personas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_deals_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_leads: {
+        Row: {
+          company: string | null
+          created_at: string | null
+          email: string | null
+          enrichment_data: Json | null
+          id: string
+          last_contacted_at: string | null
+          linkedin_url: string | null
+          name: string
+          persona_id: string | null
+          phone: string | null
+          revenue_score: number | null
+          site_id: string | null
+          source: string | null
+          status: string | null
+          tags: Json | null
+          title: string | null
+          updated_at: string | null
+          website: string | null
+        }
+        Insert: {
+          company?: string | null
+          created_at?: string | null
+          email?: string | null
+          enrichment_data?: Json | null
+          id?: string
+          last_contacted_at?: string | null
+          linkedin_url?: string | null
+          name: string
+          persona_id?: string | null
+          phone?: string | null
+          revenue_score?: number | null
+          site_id?: string | null
+          source?: string | null
+          status?: string | null
+          tags?: Json | null
+          title?: string | null
+          updated_at?: string | null
+          website?: string | null
+        }
+        Update: {
+          company?: string | null
+          created_at?: string | null
+          email?: string | null
+          enrichment_data?: Json | null
+          id?: string
+          last_contacted_at?: string | null
+          linkedin_url?: string | null
+          name?: string
+          persona_id?: string | null
+          phone?: string | null
+          revenue_score?: number | null
+          site_id?: string | null
+          source?: string | null
+          status?: string | null
+          tags?: Json | null
+          title?: string | null
+          updated_at?: string | null
+          website?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_leads_persona_id_fkey"
+            columns: ["persona_id"]
+            isOneToOne: false
+            referencedRelation: "ai_personas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_leads_site_id_fkey"
             columns: ["site_id"]
             isOneToOne: false
             referencedRelation: "sites"
@@ -790,6 +1175,176 @@ export type Database = {
           },
         ]
       }
+      persona_conversations: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          metadata: Json | null
+          persona_id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          persona_id: string
+          role: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          persona_id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "persona_conversations_persona_id_fkey"
+            columns: ["persona_id"]
+            isOneToOne: false
+            referencedRelation: "ai_personas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      persona_daily_reports: {
+        Row: {
+          blockers: Json | null
+          created_at: string | null
+          highlights: Json | null
+          id: string
+          key_metrics: Json | null
+          next_day_plan: Json | null
+          persona_id: string
+          report_date: string
+          site_id: string | null
+          summary: string | null
+          tasks_completed: number | null
+          tasks_pending: number | null
+        }
+        Insert: {
+          blockers?: Json | null
+          created_at?: string | null
+          highlights?: Json | null
+          id?: string
+          key_metrics?: Json | null
+          next_day_plan?: Json | null
+          persona_id: string
+          report_date?: string
+          site_id?: string | null
+          summary?: string | null
+          tasks_completed?: number | null
+          tasks_pending?: number | null
+        }
+        Update: {
+          blockers?: Json | null
+          created_at?: string | null
+          highlights?: Json | null
+          id?: string
+          key_metrics?: Json | null
+          next_day_plan?: Json | null
+          persona_id?: string
+          report_date?: string
+          site_id?: string | null
+          summary?: string | null
+          tasks_completed?: number | null
+          tasks_pending?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "persona_daily_reports_persona_id_fkey"
+            columns: ["persona_id"]
+            isOneToOne: false
+            referencedRelation: "ai_personas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "persona_daily_reports_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      persona_tasks: {
+        Row: {
+          admin_notes: string | null
+          approved_at: string | null
+          completed_at: string | null
+          created_at: string | null
+          description: string | null
+          due_date: string | null
+          id: string
+          persona_id: string
+          priority: string | null
+          rejected_at: string | null
+          result: Json | null
+          site_id: string | null
+          status: string | null
+          task_type: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          approved_at?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          persona_id: string
+          priority?: string | null
+          rejected_at?: string | null
+          result?: Json | null
+          site_id?: string | null
+          status?: string | null
+          task_type: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          approved_at?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          persona_id?: string
+          priority?: string | null
+          rejected_at?: string | null
+          result?: Json | null
+          site_id?: string | null
+          status?: string | null
+          task_type?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "persona_tasks_persona_id_fkey"
+            columns: ["persona_id"]
+            isOneToOne: false
+            referencedRelation: "ai_personas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "persona_tasks_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -1021,6 +1576,72 @@ export type Database = {
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      social_content_calendar: {
+        Row: {
+          content: string
+          created_at: string | null
+          engagement_metrics: Json | null
+          hashtags: Json | null
+          id: string
+          media_urls: Json | null
+          persona_id: string | null
+          platform: string
+          published_at: string | null
+          scheduled_at: string | null
+          site_id: string | null
+          status: string | null
+          updated_at: string | null
+          variation_group: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          engagement_metrics?: Json | null
+          hashtags?: Json | null
+          id?: string
+          media_urls?: Json | null
+          persona_id?: string | null
+          platform: string
+          published_at?: string | null
+          scheduled_at?: string | null
+          site_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+          variation_group?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          engagement_metrics?: Json | null
+          hashtags?: Json | null
+          id?: string
+          media_urls?: Json | null
+          persona_id?: string | null
+          platform?: string
+          published_at?: string | null
+          scheduled_at?: string | null
+          site_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+          variation_group?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_content_calendar_persona_id_fkey"
+            columns: ["persona_id"]
+            isOneToOne: false
+            referencedRelation: "ai_personas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "social_content_calendar_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
             referencedColumns: ["id"]
           },
         ]
