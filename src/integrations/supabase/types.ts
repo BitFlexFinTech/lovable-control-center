@@ -1375,6 +1375,284 @@ export type Database = {
         }
         Relationships: []
       }
+      quantops_apply_events: {
+        Row: {
+          actor_role: string
+          actor_user_id: string | null
+          breached_thresholds: Json | null
+          build_id: string | null
+          card_id: string | null
+          commit_sha: string | null
+          created_at: string | null
+          duration_ms: number | null
+          environment: Database["public"]["Enums"]["deploy_environment"]
+          error_summary: string | null
+          id: string
+          metrics_snapshot: Json | null
+          persona_id: string | null
+          pr_number: number | null
+          pr_url: string | null
+          result: Database["public"]["Enums"]["apply_result"] | null
+          rollback_ref: string | null
+          site_id: string | null
+          tests_passed: boolean | null
+        }
+        Insert: {
+          actor_role: string
+          actor_user_id?: string | null
+          breached_thresholds?: Json | null
+          build_id?: string | null
+          card_id?: string | null
+          commit_sha?: string | null
+          created_at?: string | null
+          duration_ms?: number | null
+          environment: Database["public"]["Enums"]["deploy_environment"]
+          error_summary?: string | null
+          id?: string
+          metrics_snapshot?: Json | null
+          persona_id?: string | null
+          pr_number?: number | null
+          pr_url?: string | null
+          result?: Database["public"]["Enums"]["apply_result"] | null
+          rollback_ref?: string | null
+          site_id?: string | null
+          tests_passed?: boolean | null
+        }
+        Update: {
+          actor_role?: string
+          actor_user_id?: string | null
+          breached_thresholds?: Json | null
+          build_id?: string | null
+          card_id?: string | null
+          commit_sha?: string | null
+          created_at?: string | null
+          duration_ms?: number | null
+          environment?: Database["public"]["Enums"]["deploy_environment"]
+          error_summary?: string | null
+          id?: string
+          metrics_snapshot?: Json | null
+          persona_id?: string | null
+          pr_number?: number | null
+          pr_url?: string | null
+          result?: Database["public"]["Enums"]["apply_result"] | null
+          rollback_ref?: string | null
+          site_id?: string | null
+          tests_passed?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quantops_apply_events_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "quantops_recommendation_cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quantops_apply_events_persona_id_fkey"
+            columns: ["persona_id"]
+            isOneToOne: false
+            referencedRelation: "quantops_personas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quantops_apply_events_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quantops_kpi_thresholds: {
+        Row: {
+          auto_rollback: boolean | null
+          created_at: string | null
+          critical_threshold: number | null
+          direction: string | null
+          id: string
+          metric_name: string
+          notification_channels: string[] | null
+          persona_id: string | null
+          updated_at: string | null
+          warning_threshold: number | null
+        }
+        Insert: {
+          auto_rollback?: boolean | null
+          created_at?: string | null
+          critical_threshold?: number | null
+          direction?: string | null
+          id?: string
+          metric_name: string
+          notification_channels?: string[] | null
+          persona_id?: string | null
+          updated_at?: string | null
+          warning_threshold?: number | null
+        }
+        Update: {
+          auto_rollback?: boolean | null
+          created_at?: string | null
+          critical_threshold?: number | null
+          direction?: string | null
+          id?: string
+          metric_name?: string
+          notification_channels?: string[] | null
+          persona_id?: string | null
+          updated_at?: string | null
+          warning_threshold?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quantops_kpi_thresholds_persona_id_fkey"
+            columns: ["persona_id"]
+            isOneToOne: false
+            referencedRelation: "quantops_personas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quantops_personas: {
+        Row: {
+          avatar_url: string | null
+          capabilities: Json | null
+          codename: string
+          created_at: string | null
+          description: string | null
+          github_config: Json | null
+          id: string
+          kpi_thresholds: Json | null
+          lovable_config: Json | null
+          name: string
+          role: string
+          site_id: string | null
+          status: string | null
+          system_prompt: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          capabilities?: Json | null
+          codename: string
+          created_at?: string | null
+          description?: string | null
+          github_config?: Json | null
+          id?: string
+          kpi_thresholds?: Json | null
+          lovable_config?: Json | null
+          name: string
+          role: string
+          site_id?: string | null
+          status?: string | null
+          system_prompt?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          capabilities?: Json | null
+          codename?: string
+          created_at?: string | null
+          description?: string | null
+          github_config?: Json | null
+          id?: string
+          kpi_thresholds?: Json | null
+          lovable_config?: Json | null
+          name?: string
+          role?: string
+          site_id?: string | null
+          status?: string | null
+          system_prompt?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quantops_personas_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quantops_recommendation_cards: {
+        Row: {
+          card_type: string
+          code_patches: Json | null
+          created_at: string | null
+          description: string | null
+          estimated_improvement: Json | null
+          expires_at: string | null
+          id: string
+          impact_score: number | null
+          persona_id: string | null
+          priority: string | null
+          proposed_changes: Json | null
+          risk_level: string | null
+          rollback_plan: Json | null
+          site_id: string | null
+          status: string | null
+          test_requirements: Json | null
+          title: string
+          trigger_metrics: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          card_type: string
+          code_patches?: Json | null
+          created_at?: string | null
+          description?: string | null
+          estimated_improvement?: Json | null
+          expires_at?: string | null
+          id?: string
+          impact_score?: number | null
+          persona_id?: string | null
+          priority?: string | null
+          proposed_changes?: Json | null
+          risk_level?: string | null
+          rollback_plan?: Json | null
+          site_id?: string | null
+          status?: string | null
+          test_requirements?: Json | null
+          title: string
+          trigger_metrics?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          card_type?: string
+          code_patches?: Json | null
+          created_at?: string | null
+          description?: string | null
+          estimated_improvement?: Json | null
+          expires_at?: string | null
+          id?: string
+          impact_score?: number | null
+          persona_id?: string | null
+          priority?: string | null
+          proposed_changes?: Json | null
+          risk_level?: string | null
+          rollback_plan?: Json | null
+          site_id?: string | null
+          status?: string | null
+          test_requirements?: Json | null
+          title?: string
+          trigger_metrics?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quantops_recommendation_cards_persona_id_fkey"
+            columns: ["persona_id"]
+            isOneToOne: false
+            referencedRelation: "quantops_personas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quantops_recommendation_cards_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       role_permissions: {
         Row: {
           can_create: boolean | null
@@ -1943,6 +2221,1213 @@ export type Database = {
           },
         ]
       }
+      youtube_analytics: {
+        Row: {
+          avg_view_duration: number | null
+          channel_id: string | null
+          comments: number | null
+          cpm_cents: number | null
+          created_at: string | null
+          ctr: number | null
+          date: string
+          demographics: Json | null
+          devices: Json | null
+          dislikes: number | null
+          id: string
+          impressions: number | null
+          likes: number | null
+          revenue_cents: number | null
+          rpm_cents: number | null
+          shares: number | null
+          subscribers_gained: number | null
+          subscribers_lost: number | null
+          traffic_sources: Json | null
+          video_id: string | null
+          views: number | null
+          watch_time_minutes: number | null
+        }
+        Insert: {
+          avg_view_duration?: number | null
+          channel_id?: string | null
+          comments?: number | null
+          cpm_cents?: number | null
+          created_at?: string | null
+          ctr?: number | null
+          date: string
+          demographics?: Json | null
+          devices?: Json | null
+          dislikes?: number | null
+          id?: string
+          impressions?: number | null
+          likes?: number | null
+          revenue_cents?: number | null
+          rpm_cents?: number | null
+          shares?: number | null
+          subscribers_gained?: number | null
+          subscribers_lost?: number | null
+          traffic_sources?: Json | null
+          video_id?: string | null
+          views?: number | null
+          watch_time_minutes?: number | null
+        }
+        Update: {
+          avg_view_duration?: number | null
+          channel_id?: string | null
+          comments?: number | null
+          cpm_cents?: number | null
+          created_at?: string | null
+          ctr?: number | null
+          date?: string
+          demographics?: Json | null
+          devices?: Json | null
+          dislikes?: number | null
+          id?: string
+          impressions?: number | null
+          likes?: number | null
+          revenue_cents?: number | null
+          rpm_cents?: number | null
+          shares?: number | null
+          subscribers_gained?: number | null
+          subscribers_lost?: number | null
+          traffic_sources?: Json | null
+          video_id?: string | null
+          views?: number | null
+          watch_time_minutes?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "youtube_analytics_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "youtube_channels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "youtube_analytics_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "youtube_videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      youtube_audience_insights: {
+        Row: {
+          age_groups: Json | null
+          channel_id: string | null
+          created_at: string | null
+          date: string
+          device_types: Json | null
+          gender_distribution: Json | null
+          geography: Json | null
+          id: string
+          interests: Json | null
+          returning_viewer_rate: number | null
+          subscriber_growth_rate: number | null
+          traffic_sources: Json | null
+          watch_time_patterns: Json | null
+        }
+        Insert: {
+          age_groups?: Json | null
+          channel_id?: string | null
+          created_at?: string | null
+          date: string
+          device_types?: Json | null
+          gender_distribution?: Json | null
+          geography?: Json | null
+          id?: string
+          interests?: Json | null
+          returning_viewer_rate?: number | null
+          subscriber_growth_rate?: number | null
+          traffic_sources?: Json | null
+          watch_time_patterns?: Json | null
+        }
+        Update: {
+          age_groups?: Json | null
+          channel_id?: string | null
+          created_at?: string | null
+          date?: string
+          device_types?: Json | null
+          gender_distribution?: Json | null
+          geography?: Json | null
+          id?: string
+          interests?: Json | null
+          returning_viewer_rate?: number | null
+          subscriber_growth_rate?: number | null
+          traffic_sources?: Json | null
+          watch_time_patterns?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "youtube_audience_insights_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "youtube_channels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      youtube_brand_deals: {
+        Row: {
+          assigned_persona_id: string | null
+          brand_logo_url: string | null
+          brand_name: string
+          brand_website: string | null
+          channel_id: string | null
+          contact_email: string | null
+          contact_name: string | null
+          contract_signed_at: string | null
+          contract_url: string | null
+          created_at: string | null
+          deal_type: string | null
+          deliverables: Json | null
+          end_date: string | null
+          id: string
+          notes: string | null
+          payment_status: string | null
+          payment_terms: string | null
+          rate_negotiated_cents: number | null
+          rate_offered_cents: number | null
+          start_date: string | null
+          status: Database["public"]["Enums"]["deal_status"] | null
+          updated_at: string | null
+        }
+        Insert: {
+          assigned_persona_id?: string | null
+          brand_logo_url?: string | null
+          brand_name: string
+          brand_website?: string | null
+          channel_id?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contract_signed_at?: string | null
+          contract_url?: string | null
+          created_at?: string | null
+          deal_type?: string | null
+          deliverables?: Json | null
+          end_date?: string | null
+          id?: string
+          notes?: string | null
+          payment_status?: string | null
+          payment_terms?: string | null
+          rate_negotiated_cents?: number | null
+          rate_offered_cents?: number | null
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["deal_status"] | null
+          updated_at?: string | null
+        }
+        Update: {
+          assigned_persona_id?: string | null
+          brand_logo_url?: string | null
+          brand_name?: string
+          brand_website?: string | null
+          channel_id?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contract_signed_at?: string | null
+          contract_url?: string | null
+          created_at?: string | null
+          deal_type?: string | null
+          deliverables?: Json | null
+          end_date?: string | null
+          id?: string
+          notes?: string | null
+          payment_status?: string | null
+          payment_terms?: string | null
+          rate_negotiated_cents?: number | null
+          rate_offered_cents?: number | null
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["deal_status"] | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "youtube_brand_deals_assigned_persona_id_fkey"
+            columns: ["assigned_persona_id"]
+            isOneToOne: false
+            referencedRelation: "youtube_personas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "youtube_brand_deals_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "youtube_channels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      youtube_channel_health: {
+        Row: {
+          audience_score: number | null
+          calculated_at: string | null
+          category_breakdown: Json | null
+          channel_id: string | null
+          consistency_score: number | null
+          content_score: number | null
+          created_at: string | null
+          engagement_score: number | null
+          growth_score: number | null
+          id: string
+          monetization_score: number | null
+          overall_grade: string | null
+          overall_score: number | null
+          quick_wins: Json | null
+          recommendations: Json | null
+          seo_score: number | null
+        }
+        Insert: {
+          audience_score?: number | null
+          calculated_at?: string | null
+          category_breakdown?: Json | null
+          channel_id?: string | null
+          consistency_score?: number | null
+          content_score?: number | null
+          created_at?: string | null
+          engagement_score?: number | null
+          growth_score?: number | null
+          id?: string
+          monetization_score?: number | null
+          overall_grade?: string | null
+          overall_score?: number | null
+          quick_wins?: Json | null
+          recommendations?: Json | null
+          seo_score?: number | null
+        }
+        Update: {
+          audience_score?: number | null
+          calculated_at?: string | null
+          category_breakdown?: Json | null
+          channel_id?: string | null
+          consistency_score?: number | null
+          content_score?: number | null
+          created_at?: string | null
+          engagement_score?: number | null
+          growth_score?: number | null
+          id?: string
+          monetization_score?: number | null
+          overall_grade?: string | null
+          overall_score?: number | null
+          quick_wins?: Json | null
+          recommendations?: Json | null
+          seo_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "youtube_channel_health_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "youtube_channels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      youtube_channel_portfolios: {
+        Row: {
+          aggregate_health_score: number | null
+          channels: string[] | null
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          primary_channel_id: string | null
+          total_subscribers: number | null
+          total_videos: number | null
+          total_views: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          aggregate_health_score?: number | null
+          channels?: string[] | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          primary_channel_id?: string | null
+          total_subscribers?: number | null
+          total_videos?: number | null
+          total_views?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          aggregate_health_score?: number | null
+          channels?: string[] | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          primary_channel_id?: string | null
+          total_subscribers?: number | null
+          total_videos?: number | null
+          total_views?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "youtube_channel_portfolios_primary_channel_id_fkey"
+            columns: ["primary_channel_id"]
+            isOneToOne: false
+            referencedRelation: "youtube_channels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      youtube_channels: {
+        Row: {
+          channel_id: string
+          channel_name: string
+          channel_url: string | null
+          country: string | null
+          created_at: string | null
+          custom_url: string | null
+          description: string | null
+          health_score: number | null
+          id: string
+          is_monetized: boolean | null
+          is_verified: boolean | null
+          keywords: string[] | null
+          last_synced_at: string | null
+          persona_id: string | null
+          site_id: string | null
+          subscriber_count: number | null
+          thumbnail_url: string | null
+          updated_at: string | null
+          video_count: number | null
+          view_count: number | null
+        }
+        Insert: {
+          channel_id: string
+          channel_name: string
+          channel_url?: string | null
+          country?: string | null
+          created_at?: string | null
+          custom_url?: string | null
+          description?: string | null
+          health_score?: number | null
+          id?: string
+          is_monetized?: boolean | null
+          is_verified?: boolean | null
+          keywords?: string[] | null
+          last_synced_at?: string | null
+          persona_id?: string | null
+          site_id?: string | null
+          subscriber_count?: number | null
+          thumbnail_url?: string | null
+          updated_at?: string | null
+          video_count?: number | null
+          view_count?: number | null
+        }
+        Update: {
+          channel_id?: string
+          channel_name?: string
+          channel_url?: string | null
+          country?: string | null
+          created_at?: string | null
+          custom_url?: string | null
+          description?: string | null
+          health_score?: number | null
+          id?: string
+          is_monetized?: boolean | null
+          is_verified?: boolean | null
+          keywords?: string[] | null
+          last_synced_at?: string | null
+          persona_id?: string | null
+          site_id?: string | null
+          subscriber_count?: number | null
+          thumbnail_url?: string | null
+          updated_at?: string | null
+          video_count?: number | null
+          view_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "youtube_channels_persona_id_fkey"
+            columns: ["persona_id"]
+            isOneToOne: false
+            referencedRelation: "ai_personas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "youtube_channels_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      youtube_collaborations: {
+        Row: {
+          assigned_persona_id: string | null
+          audience_overlap_percent: number | null
+          channel_id: string | null
+          collab_type: string | null
+          compatibility_score: number | null
+          content_synergy_score: number | null
+          created_at: string | null
+          growth_potential_score: number | null
+          id: string
+          outreach_message: string | null
+          partner_channel_id: string
+          partner_channel_name: string
+          partner_subscriber_count: number | null
+          partner_thumbnail_url: string | null
+          proposed_concept: string | null
+          response_received: boolean | null
+          results: Json | null
+          scheduled_date: string | null
+          status: Database["public"]["Enums"]["collab_status"] | null
+          updated_at: string | null
+          video_id: string | null
+        }
+        Insert: {
+          assigned_persona_id?: string | null
+          audience_overlap_percent?: number | null
+          channel_id?: string | null
+          collab_type?: string | null
+          compatibility_score?: number | null
+          content_synergy_score?: number | null
+          created_at?: string | null
+          growth_potential_score?: number | null
+          id?: string
+          outreach_message?: string | null
+          partner_channel_id: string
+          partner_channel_name: string
+          partner_subscriber_count?: number | null
+          partner_thumbnail_url?: string | null
+          proposed_concept?: string | null
+          response_received?: boolean | null
+          results?: Json | null
+          scheduled_date?: string | null
+          status?: Database["public"]["Enums"]["collab_status"] | null
+          updated_at?: string | null
+          video_id?: string | null
+        }
+        Update: {
+          assigned_persona_id?: string | null
+          audience_overlap_percent?: number | null
+          channel_id?: string | null
+          collab_type?: string | null
+          compatibility_score?: number | null
+          content_synergy_score?: number | null
+          created_at?: string | null
+          growth_potential_score?: number | null
+          id?: string
+          outreach_message?: string | null
+          partner_channel_id?: string
+          partner_channel_name?: string
+          partner_subscriber_count?: number | null
+          partner_thumbnail_url?: string | null
+          proposed_concept?: string | null
+          response_received?: boolean | null
+          results?: Json | null
+          scheduled_date?: string | null
+          status?: Database["public"]["Enums"]["collab_status"] | null
+          updated_at?: string | null
+          video_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "youtube_collaborations_assigned_persona_id_fkey"
+            columns: ["assigned_persona_id"]
+            isOneToOne: false
+            referencedRelation: "youtube_personas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "youtube_collaborations_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "youtube_channels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "youtube_collaborations_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "youtube_videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      youtube_content_calendar: {
+        Row: {
+          assigned_personas: string[] | null
+          channel_id: string | null
+          checklist: Json | null
+          content_type: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          notes: string | null
+          persona_id: string | null
+          priority: string | null
+          scheduled_date: string
+          scheduled_time: string | null
+          status: Database["public"]["Enums"]["video_status"] | null
+          title: string
+          updated_at: string | null
+          video_id: string | null
+        }
+        Insert: {
+          assigned_personas?: string[] | null
+          channel_id?: string | null
+          checklist?: Json | null
+          content_type?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          notes?: string | null
+          persona_id?: string | null
+          priority?: string | null
+          scheduled_date: string
+          scheduled_time?: string | null
+          status?: Database["public"]["Enums"]["video_status"] | null
+          title: string
+          updated_at?: string | null
+          video_id?: string | null
+        }
+        Update: {
+          assigned_personas?: string[] | null
+          channel_id?: string | null
+          checklist?: Json | null
+          content_type?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          notes?: string | null
+          persona_id?: string | null
+          priority?: string | null
+          scheduled_date?: string
+          scheduled_time?: string | null
+          status?: Database["public"]["Enums"]["video_status"] | null
+          title?: string
+          updated_at?: string | null
+          video_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "youtube_content_calendar_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "youtube_channels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "youtube_content_calendar_persona_id_fkey"
+            columns: ["persona_id"]
+            isOneToOne: false
+            referencedRelation: "youtube_personas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "youtube_content_calendar_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "youtube_videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      youtube_crisis_events: {
+        Row: {
+          actions_taken: Json | null
+          assigned_persona_id: string | null
+          channel_id: string | null
+          created_at: string | null
+          description: string | null
+          detected_at: string | null
+          dislike_ratio: number | null
+          escalation_level: number | null
+          id: string
+          negative_comment_count: number | null
+          resolved_at: string | null
+          response_recommendations: Json | null
+          sentiment_score: number | null
+          severity: Database["public"]["Enums"]["crisis_severity"] | null
+          status: string | null
+          title: string
+          type: string
+          updated_at: string | null
+          video_id: string | null
+        }
+        Insert: {
+          actions_taken?: Json | null
+          assigned_persona_id?: string | null
+          channel_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          detected_at?: string | null
+          dislike_ratio?: number | null
+          escalation_level?: number | null
+          id?: string
+          negative_comment_count?: number | null
+          resolved_at?: string | null
+          response_recommendations?: Json | null
+          sentiment_score?: number | null
+          severity?: Database["public"]["Enums"]["crisis_severity"] | null
+          status?: string | null
+          title: string
+          type: string
+          updated_at?: string | null
+          video_id?: string | null
+        }
+        Update: {
+          actions_taken?: Json | null
+          assigned_persona_id?: string | null
+          channel_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          detected_at?: string | null
+          dislike_ratio?: number | null
+          escalation_level?: number | null
+          id?: string
+          negative_comment_count?: number | null
+          resolved_at?: string | null
+          response_recommendations?: Json | null
+          sentiment_score?: number | null
+          severity?: Database["public"]["Enums"]["crisis_severity"] | null
+          status?: string | null
+          title?: string
+          type?: string
+          updated_at?: string | null
+          video_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "youtube_crisis_events_assigned_persona_id_fkey"
+            columns: ["assigned_persona_id"]
+            isOneToOne: false
+            referencedRelation: "youtube_personas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "youtube_crisis_events_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "youtube_channels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "youtube_crisis_events_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "youtube_videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      youtube_live_streams: {
+        Row: {
+          actual_end: string | null
+          actual_start: string | null
+          assigned_persona_id: string | null
+          avg_viewers: number | null
+          channel_id: string | null
+          created_at: string | null
+          description: string | null
+          highlights: Json | null
+          id: string
+          moderation_stats: Json | null
+          peak_viewers: number | null
+          post_stream_analytics: Json | null
+          scheduled_start: string | null
+          status: string | null
+          stream_id: string | null
+          title: string
+          total_chat_messages: number | null
+          total_memberships: number | null
+          total_super_chats_cents: number | null
+          updated_at: string | null
+          video_id: string | null
+        }
+        Insert: {
+          actual_end?: string | null
+          actual_start?: string | null
+          assigned_persona_id?: string | null
+          avg_viewers?: number | null
+          channel_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          highlights?: Json | null
+          id?: string
+          moderation_stats?: Json | null
+          peak_viewers?: number | null
+          post_stream_analytics?: Json | null
+          scheduled_start?: string | null
+          status?: string | null
+          stream_id?: string | null
+          title: string
+          total_chat_messages?: number | null
+          total_memberships?: number | null
+          total_super_chats_cents?: number | null
+          updated_at?: string | null
+          video_id?: string | null
+        }
+        Update: {
+          actual_end?: string | null
+          actual_start?: string | null
+          assigned_persona_id?: string | null
+          avg_viewers?: number | null
+          channel_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          highlights?: Json | null
+          id?: string
+          moderation_stats?: Json | null
+          peak_viewers?: number | null
+          post_stream_analytics?: Json | null
+          scheduled_start?: string | null
+          status?: string | null
+          stream_id?: string | null
+          title?: string
+          total_chat_messages?: number | null
+          total_memberships?: number | null
+          total_super_chats_cents?: number | null
+          updated_at?: string | null
+          video_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "youtube_live_streams_assigned_persona_id_fkey"
+            columns: ["assigned_persona_id"]
+            isOneToOne: false
+            referencedRelation: "youtube_personas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "youtube_live_streams_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "youtube_channels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "youtube_live_streams_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "youtube_videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      youtube_merch_stores: {
+        Row: {
+          api_key_encrypted: string | null
+          channel_id: string | null
+          created_at: string | null
+          id: string
+          is_connected: boolean | null
+          last_synced_at: string | null
+          provider: string
+          store_id: string | null
+          store_url: string | null
+          total_products: number | null
+          total_revenue_cents: number | null
+          total_sales_cents: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          api_key_encrypted?: string | null
+          channel_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_connected?: boolean | null
+          last_synced_at?: string | null
+          provider: string
+          store_id?: string | null
+          store_url?: string | null
+          total_products?: number | null
+          total_revenue_cents?: number | null
+          total_sales_cents?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          api_key_encrypted?: string | null
+          channel_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_connected?: boolean | null
+          last_synced_at?: string | null
+          provider?: string
+          store_id?: string | null
+          store_url?: string | null
+          total_products?: number | null
+          total_revenue_cents?: number | null
+          total_sales_cents?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "youtube_merch_stores_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "youtube_channels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      youtube_monetization: {
+        Row: {
+          ad_revenue_cents: number | null
+          affiliate_cents: number | null
+          channel_id: string | null
+          created_at: string | null
+          date: string
+          estimated_cpm_cents: number | null
+          estimated_rpm_cents: number | null
+          id: string
+          membership_cents: number | null
+          merch_cents: number | null
+          monetized_playbacks: number | null
+          sponsorship_cents: number | null
+          super_chat_cents: number | null
+          total_cents: number | null
+        }
+        Insert: {
+          ad_revenue_cents?: number | null
+          affiliate_cents?: number | null
+          channel_id?: string | null
+          created_at?: string | null
+          date: string
+          estimated_cpm_cents?: number | null
+          estimated_rpm_cents?: number | null
+          id?: string
+          membership_cents?: number | null
+          merch_cents?: number | null
+          monetized_playbacks?: number | null
+          sponsorship_cents?: number | null
+          super_chat_cents?: number | null
+          total_cents?: number | null
+        }
+        Update: {
+          ad_revenue_cents?: number | null
+          affiliate_cents?: number | null
+          channel_id?: string | null
+          created_at?: string | null
+          date?: string
+          estimated_cpm_cents?: number | null
+          estimated_rpm_cents?: number | null
+          id?: string
+          membership_cents?: number | null
+          merch_cents?: number | null
+          monetized_playbacks?: number | null
+          sponsorship_cents?: number | null
+          super_chat_cents?: number | null
+          total_cents?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "youtube_monetization_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "youtube_channels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      youtube_personas: {
+        Row: {
+          avatar_url: string | null
+          base_persona_id: string | null
+          capabilities: Json | null
+          channel_id: string | null
+          created_at: string | null
+          daily_schedule: Json | null
+          id: string
+          name: string
+          performance_metrics: Json | null
+          role: Database["public"]["Enums"]["youtube_persona_role"]
+          site_id: string | null
+          status: string | null
+          system_prompt: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          base_persona_id?: string | null
+          capabilities?: Json | null
+          channel_id?: string | null
+          created_at?: string | null
+          daily_schedule?: Json | null
+          id?: string
+          name: string
+          performance_metrics?: Json | null
+          role: Database["public"]["Enums"]["youtube_persona_role"]
+          site_id?: string | null
+          status?: string | null
+          system_prompt?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          base_persona_id?: string | null
+          capabilities?: Json | null
+          channel_id?: string | null
+          created_at?: string | null
+          daily_schedule?: Json | null
+          id?: string
+          name?: string
+          performance_metrics?: Json | null
+          role?: Database["public"]["Enums"]["youtube_persona_role"]
+          site_id?: string | null
+          status?: string | null
+          system_prompt?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "youtube_personas_base_persona_id_fkey"
+            columns: ["base_persona_id"]
+            isOneToOne: false
+            referencedRelation: "ai_personas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "youtube_personas_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "youtube_channels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "youtube_personas_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      youtube_seo_analysis: {
+        Row: {
+          analyzed_at: string | null
+          competitor_comparison: Json | null
+          created_at: string | null
+          description_score: number | null
+          id: string
+          keyword_analysis: Json | null
+          overall_score: number | null
+          recommendations: Json | null
+          tags_score: number | null
+          thumbnail_score: number | null
+          title_score: number | null
+          trend_alignment: Json | null
+          video_id: string | null
+        }
+        Insert: {
+          analyzed_at?: string | null
+          competitor_comparison?: Json | null
+          created_at?: string | null
+          description_score?: number | null
+          id?: string
+          keyword_analysis?: Json | null
+          overall_score?: number | null
+          recommendations?: Json | null
+          tags_score?: number | null
+          thumbnail_score?: number | null
+          title_score?: number | null
+          trend_alignment?: Json | null
+          video_id?: string | null
+        }
+        Update: {
+          analyzed_at?: string | null
+          competitor_comparison?: Json | null
+          created_at?: string | null
+          description_score?: number | null
+          id?: string
+          keyword_analysis?: Json | null
+          overall_score?: number | null
+          recommendations?: Json | null
+          tags_score?: number | null
+          thumbnail_score?: number | null
+          title_score?: number | null
+          trend_alignment?: Json | null
+          video_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "youtube_seo_analysis_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "youtube_videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      youtube_video_ideas: {
+        Row: {
+          audience_match: number | null
+          calendar_id: string | null
+          channel_id: string | null
+          competition_level: string | null
+          created_at: string | null
+          description: string | null
+          estimated_ctr: number | null
+          estimated_views: number | null
+          id: string
+          keywords: string[] | null
+          promoted_to_calendar: boolean | null
+          score: number | null
+          source: string | null
+          source_data: Json | null
+          status: string | null
+          tags: string[] | null
+          thumbnail_concepts: Json | null
+          title: string
+          trend_relevance: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          audience_match?: number | null
+          calendar_id?: string | null
+          channel_id?: string | null
+          competition_level?: string | null
+          created_at?: string | null
+          description?: string | null
+          estimated_ctr?: number | null
+          estimated_views?: number | null
+          id?: string
+          keywords?: string[] | null
+          promoted_to_calendar?: boolean | null
+          score?: number | null
+          source?: string | null
+          source_data?: Json | null
+          status?: string | null
+          tags?: string[] | null
+          thumbnail_concepts?: Json | null
+          title: string
+          trend_relevance?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          audience_match?: number | null
+          calendar_id?: string | null
+          channel_id?: string | null
+          competition_level?: string | null
+          created_at?: string | null
+          description?: string | null
+          estimated_ctr?: number | null
+          estimated_views?: number | null
+          id?: string
+          keywords?: string[] | null
+          promoted_to_calendar?: boolean | null
+          score?: number | null
+          source?: string | null
+          source_data?: Json | null
+          status?: string | null
+          tags?: string[] | null
+          thumbnail_concepts?: Json | null
+          title?: string
+          trend_relevance?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "youtube_video_ideas_calendar_id_fkey"
+            columns: ["calendar_id"]
+            isOneToOne: false
+            referencedRelation: "youtube_content_calendar"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "youtube_video_ideas_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "youtube_channels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      youtube_videos: {
+        Row: {
+          avg_view_duration: number | null
+          category_id: string | null
+          channel_id: string | null
+          comment_count: number | null
+          created_at: string | null
+          ctr: number | null
+          description: string | null
+          dislike_count: number | null
+          duration_seconds: number | null
+          engagement_rate: number | null
+          id: string
+          is_monetized: boolean | null
+          is_shorts: boolean | null
+          like_count: number | null
+          published_at: string | null
+          seo_score: number | null
+          status: Database["public"]["Enums"]["video_status"] | null
+          tags: string[] | null
+          thumbnail_url: string | null
+          title: string
+          updated_at: string | null
+          video_id: string
+          view_count: number | null
+        }
+        Insert: {
+          avg_view_duration?: number | null
+          category_id?: string | null
+          channel_id?: string | null
+          comment_count?: number | null
+          created_at?: string | null
+          ctr?: number | null
+          description?: string | null
+          dislike_count?: number | null
+          duration_seconds?: number | null
+          engagement_rate?: number | null
+          id?: string
+          is_monetized?: boolean | null
+          is_shorts?: boolean | null
+          like_count?: number | null
+          published_at?: string | null
+          seo_score?: number | null
+          status?: Database["public"]["Enums"]["video_status"] | null
+          tags?: string[] | null
+          thumbnail_url?: string | null
+          title: string
+          updated_at?: string | null
+          video_id: string
+          view_count?: number | null
+        }
+        Update: {
+          avg_view_duration?: number | null
+          category_id?: string | null
+          channel_id?: string | null
+          comment_count?: number | null
+          created_at?: string | null
+          ctr?: number | null
+          description?: string | null
+          dislike_count?: number | null
+          duration_seconds?: number | null
+          engagement_rate?: number | null
+          id?: string
+          is_monetized?: boolean | null
+          is_shorts?: boolean | null
+          like_count?: number | null
+          published_at?: string | null
+          seo_score?: number | null
+          status?: Database["public"]["Enums"]["video_status"] | null
+          tags?: string[] | null
+          thumbnail_url?: string | null
+          title?: string
+          updated_at?: string | null
+          video_id?: string
+          view_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "youtube_videos_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "youtube_channels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       users_with_roles: {
@@ -1975,6 +3460,26 @@ export type Database = {
     }
     Enums: {
       app_role: "super_admin" | "admin" | "editor"
+      apply_result: "pending" | "success" | "failed" | "rolled_back"
+      collab_status:
+        | "discovered"
+        | "analyzing"
+        | "outreach"
+        | "discussing"
+        | "planning"
+        | "scheduled"
+        | "completed"
+        | "declined"
+      crisis_severity: "low" | "medium" | "high" | "critical"
+      deal_status:
+        | "prospecting"
+        | "outreach"
+        | "negotiating"
+        | "contracted"
+        | "active"
+        | "completed"
+        | "cancelled"
+      deploy_environment: "demo" | "paper" | "canary" | "live"
       payment_gateway: "stripe" | "paypal" | "btc" | "usdt" | "eth"
       transaction_status:
         | "pending"
@@ -1982,6 +3487,22 @@ export type Database = {
         | "failed"
         | "refunded"
         | "cancelled"
+      video_status:
+        | "idea"
+        | "scripting"
+        | "filming"
+        | "editing"
+        | "review"
+        | "scheduled"
+        | "published"
+        | "archived"
+      youtube_persona_role:
+        | "content_strategist"
+        | "seo_specialist"
+        | "analytics_expert"
+        | "monetization_manager"
+        | "community_manager"
+        | "live_producer"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2110,6 +3631,28 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["super_admin", "admin", "editor"],
+      apply_result: ["pending", "success", "failed", "rolled_back"],
+      collab_status: [
+        "discovered",
+        "analyzing",
+        "outreach",
+        "discussing",
+        "planning",
+        "scheduled",
+        "completed",
+        "declined",
+      ],
+      crisis_severity: ["low", "medium", "high", "critical"],
+      deal_status: [
+        "prospecting",
+        "outreach",
+        "negotiating",
+        "contracted",
+        "active",
+        "completed",
+        "cancelled",
+      ],
+      deploy_environment: ["demo", "paper", "canary", "live"],
       payment_gateway: ["stripe", "paypal", "btc", "usdt", "eth"],
       transaction_status: [
         "pending",
@@ -2117,6 +3660,24 @@ export const Constants = {
         "failed",
         "refunded",
         "cancelled",
+      ],
+      video_status: [
+        "idea",
+        "scripting",
+        "filming",
+        "editing",
+        "review",
+        "scheduled",
+        "published",
+        "archived",
+      ],
+      youtube_persona_role: [
+        "content_strategist",
+        "seo_specialist",
+        "analytics_expert",
+        "monetization_manager",
+        "community_manager",
+        "live_producer",
       ],
     },
   },
