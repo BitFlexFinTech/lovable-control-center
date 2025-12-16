@@ -288,12 +288,12 @@ export function usePromoteIdea() {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async (ideaId: string) => {
+    mutationFn: async ({ ideaId, newStatus }: { ideaId: string; newStatus: string }) => {
       const { error } = await supabase
         .from('youtube_video_ideas')
         .update({ 
-          promoted_to_calendar: true,
-          status: 'promoted' 
+          status: newStatus,
+          promoted_to_calendar: newStatus === 'scheduled',
         })
         .eq('id', ideaId);
       
@@ -301,6 +301,24 @@ export function usePromoteIdea() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['youtube-ideas'] });
+    },
+  });
+}
+
+export function useUpdateDealStatus() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ dealId, status }: { dealId: string; status: string }) => {
+      const { error } = await supabase
+        .from('youtube_brand_deals')
+        .update({ status: status as any })
+        .eq('id', dealId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['youtube-deals'] });
     },
   });
 }
