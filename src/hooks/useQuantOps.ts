@@ -218,3 +218,22 @@ export function useDismissCard() {
   });
 }
 
+// Fetch KPI thresholds for a persona
+export function useKPIThresholds(personaId?: string) {
+  return useQuery({
+    queryKey: ['quantops-kpi-thresholds', personaId],
+    queryFn: async () => {
+      if (!personaId) return [];
+      
+      const { data, error } = await supabase
+        .from('quantops_kpi_thresholds')
+        .select('*')
+        .eq('persona_id', personaId);
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!personaId,
+  });
+}
+

@@ -208,6 +208,9 @@ export function useYouTubeContentCalendar(channelId?: string) {
   });
 }
 
+// Alias for backward compatibility
+export const useContentCalendar = useYouTubeContentCalendar;
+
 // Add channel mutation
 export function useAddYouTubeChannel() {
   const queryClient = useQueryClient();
