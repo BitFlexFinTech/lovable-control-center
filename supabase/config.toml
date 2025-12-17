@@ -35,3 +35,12 @@ verify_jwt = false
 
 [functions.ai-chat]
 verify_jwt = false
+
+[functions.quantops-apply]
+verify_jwt = false
+
+[functions.quantops-rollback]
+verify_jwt = false
+
+[functions.streamengine-analyze]
+verify_jwt = false

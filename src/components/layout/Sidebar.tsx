@@ -15,7 +15,9 @@ import {
   Sparkles,
   CreditCard,
   Search,
-  MessageCircle
+  MessageCircle,
+  Youtube,
+  TrendingUp
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { cn } from '@/lib/utils';
@@ -26,6 +28,8 @@ const mainNavItems = [
   { icon: Mail, label: 'Mail', path: '/mail', tourId: 'nav-mail' },
   { icon: MessageCircle, label: 'WhatsApp', path: '/whatsapp', tourId: 'nav-whatsapp' },
   { icon: KeyRound, label: 'Password Manager', path: '/passwords', tourId: 'nav-passwords' },
+  { icon: Youtube, label: 'StreamEngine', path: '/streamengine', tourId: 'nav-streamengine' },
+  { icon: TrendingUp, label: 'QuantOps', path: '/quantops', tourId: 'nav-quantops' },
   { icon: Building2, label: 'Tenants', path: '/tenants', tourId: 'nav-tenants' },
   { icon: Globe, label: 'Sites', path: '/sites', tourId: 'nav-sites' },
   { icon: Users, label: 'Users', path: '/users', tourId: 'nav-users' },
